@@ -93,7 +93,9 @@
 {% endif %}
 </div>
 
-<div style="height: 30vh;"></div>
+{% if results|length < 10 %}
+  <div style="height: 200px;"></div>
+{% endif %}
 
 
 {% endblock %}

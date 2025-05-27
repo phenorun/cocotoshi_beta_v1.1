@@ -21,7 +21,9 @@
 ※ これらはまだ未実装です。今後のアップデートで対応予定です。
 </p>
 
-<div style="height: 30vh;"></div>
+{% if results|length < 10 %}
+  <div style="height: 200px;"></div>
+{% endif %}
 
 
 {% endblock %}
