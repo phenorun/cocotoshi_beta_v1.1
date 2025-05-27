@@ -81,7 +81,22 @@
 
 </nav>
 
+<script>
+window.addEventListener('DOMContentLoaded', function() {
+  var nav = document.querySelector('.bottom-nav');
+  if (!nav) return;
+  var navHeight = nav.offsetHeight || 60;
+  var docHeight = document.body.scrollHeight;
+  var winHeight = window.innerHeight;
 
+  // 内容が足りなければfillerを追加
+  if (docHeight < winHeight) {
+    var filler = document.createElement('div');
+    filler.style.height = (winHeight - docHeight + navHeight + 10) + 'px';
+    document.body.appendChild(filler);
+  }
+});
+</script>
 
 
 
