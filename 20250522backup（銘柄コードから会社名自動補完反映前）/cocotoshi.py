@@ -1,43 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for,jsonify
+from flask import Flask, render_template, request, redirect, url_for
 import sqlite3
 from datetime import datetime
-import csv
-
-
 
 app = Flask(__name__)
 DATABASE = 'cocotoshi.db'
-
-
-
-# ---ここからCSV自動補完用の辞書生成コード---
-def load_code2company(csv_path):
-    code2company = {}
-    with open(csv_path, encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            code = row['コード'].strip().zfill(4)      # カラム名に注意！
-            name = row['銘柄名'].strip()               # カラム名に注意！
-            code2company[code] = name
-    return code2company
-
-# プロジェクト直下などに保存したCSVファイル名に合わせてパスを設定
-code2company = load_code2company('code2company.csv')
-# ---ここまで---
-
-
-
-
-# --- 必ず app = Flask() のあとに！ ---
-@app.route('/api/company_name')
-def company_name():
-    code = request.args.get('code', '').zfill(4)
-    name = code2company.get(code, '')
-    return jsonify({'company': name})
-
-
-
-
 
 # データベース初期化
 def init_db():
@@ -108,7 +74,6 @@ def index():
         watch_to_delete=watch_to_delete,
         page=page,
         total_pages=total_pages,
-        current="history"
     )
 
 
@@ -155,7 +120,7 @@ def matrix():
                         days_held,
                         parent.get("memo", ""),
                         child.get("memo", ""),
-                        child.get("id")
+                        parent.get("id")
                     ))
 
     # 利益降順でソート
@@ -170,17 +135,11 @@ def matrix():
     end = start + per_page
     results_page = matrix_results[start:end]
 
-    for row in results_page:
-        print(row)  # これでページ内に表示される各行が確認できる
-
-
-
     return render_template(
         "matrix.html",
         results=results_page,
         page=page,
-        total_pages=total_pages,
-        current="matrix"
+        total_pages=total_pages
     )
 
 
@@ -195,43 +154,23 @@ def summary():
     with sqlite3.connect(DATABASE) as conn:
         c = conn.cursor()
         c.execute("""
-            SELECT
-    code,
-    stock,
-    purpose,
-    SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
-    - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) AS holding,
-
-    ROUND(
-      CASE
-        WHEN SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
-             - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) > 0 THEN
-          SUM(CASE WHEN type='buy' THEN price * quantity ELSE 0 END)
-          / NULLIF(SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END), 0)
-        WHEN SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
-             - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) < 0 THEN
-          SUM(CASE WHEN type='sell' THEN price * quantity ELSE 0 END)
-          / NULLIF(SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END), 0)
-        ELSE 0
-      END
-    ) AS avg_price,
-
-    CASE
-      WHEN SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
-           - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) > 0 THEN
-        MAX(CASE WHEN type='buy' THEN date END)
-      WHEN SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
-           - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) < 0 THEN
-        MAX(CASE WHEN type='sell' THEN date END)
-      ELSE NULL
-    END AS last_trade_date
-
-FROM trades
-WHERE code IS NOT NULL
-GROUP BY code, stock, purpose
-HAVING holding != 0
-ORDER BY stock
-        """)
+                  SELECT
+                    code,
+                    stock,
+                purpose,
+                 SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
+                  - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) AS holding,
+                    ROUND(
+                      SUM(CASE WHEN type='buy' THEN price * quantity ELSE 0 END) /
+                  NULLIF(SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END), 0), 0
+                    ) AS avg_price,
+                    MAX(CASE WHEN type='buy' THEN date ELSE NULL END) AS last_buy_date
+                  FROM trades
+                WHERE code IS NOT NULL
+                   GROUP BY code, stock, purpose
+                  HAVING holding != 0
+                   ORDER BY stock
+                """)
         summary_data = c.fetchall()
 
     # ページネーション
@@ -247,8 +186,7 @@ ORDER BY stock
         "summary.html",
         summary_data=summary_data_page,
         page=page,
-        total_pages=total_pages,
-        current="summary"
+        total_pages=total_pages
     )
 
 
@@ -258,7 +196,7 @@ ORDER BY stock
 
 @app.route("/settings")
 def settings():
-    return render_template("settings.html",current="settings")
+    return render_template("settings.html")
 
 
 
@@ -286,10 +224,7 @@ def form():
     if request.method == 'POST':
         # POSTされた値を取得
         type = request.form['type']
-        stock = request.form.get("stock", "").strip()
-        if not stock:
-            error_msg = "銘柄名が空です。銘柄コードを入力して自動補完してください。"
-            return render_template('form.html', error_msg=error_msg)
+        stock = request.form['stock']
         price = int(float(request.form['price']))
         quantity = int(request.form['quantity'])
         total = price * quantity
@@ -407,7 +342,8 @@ def form():
                     show_modal = True
                 return redirect(f"/?watch_to_delete={watch_id}") if show_modal else redirect("/")
     today = datetime.today().strftime('%Y-%m-%d')
-    return render_template('form.html', today=today, trade=trade, current="form")
+    return render_template('form.html', today=today, trade=trade)
+
 
 
 
@@ -434,34 +370,22 @@ def delete(id):
 
 @app.route("/history")
 def history():
-    id = request.args.get("id")
     q = request.args.get("q", "").strip()
     with sqlite3.connect(DATABASE) as conn:
         c = conn.cursor()
-        if id:
-            # 1. 親idを特定
-            c.execute("SELECT parent_id FROM trades WHERE id=?", (id,))
-            parent_id_row = c.fetchone()
-            if parent_id_row and parent_id_row[0]:
-                # 子カードなら親idを使う
-                root_id = parent_id_row[0]
-            else:
-                # 親カードなら自分のid
-                root_id = id
-            # 2. 親＋子カードのみ取得
-            c.execute("SELECT * FROM trades WHERE id=? OR parent_id=? ORDER BY date, id", (root_id, root_id))
-            trades = c.fetchall()
-        elif q:
-            # 検索
+        if q:
             q_like = f"%{q}%"
-            c.execute("SELECT * FROM trades WHERE code LIKE ? ORDER BY date, id", (q_like,))
-            trades = c.fetchall()
+            c.execute("""
+                SELECT * FROM trades
+                WHERE stock LIKE ? OR code LIKE ? OR memo LIKE ?
+                ORDER BY date DESC, id DESC
+            """, (q_like, q_like, q_like))
         else:
             c.execute("SELECT * FROM trades ORDER BY date DESC, id DESC")
-            trades = c.fetchall()
-    trade_tree = build_trade_tree(trades)
-    return render_template("history.html", trade_tree=trade_tree,current="history")
+        trades = c.fetchall()
 
+    trade_tree = build_trade_tree(trades)
+    return render_template("history.html", trade_tree=trade_tree)
 
 
 
@@ -603,7 +527,8 @@ def build_trade_tree(trades):
             "children": children,
             "remaining": pos_qty if pos_qty > 0 else -short_qty,  # 現物なら+残、空売りなら-残
             "profits": profits,
-            "average_price": avg_price if parent["type"] == "buy" else short_avg_price,
+            "average_price": avg_price,
+            "short_average_price": short_avg_price,
             "total_profit": total_profit,
             "is_completed": is_completed   # ←これを追加！！
         })
@@ -636,9 +561,8 @@ def calc_moving_average_profit(trades):
 
 
 
-@app.before_first_request
-def initialize_database():
-    init_db()
+
 
 if __name__ == '__main__':
+    init_db()
     app.run(host="0.0.0.0", port=5000, debug=True)

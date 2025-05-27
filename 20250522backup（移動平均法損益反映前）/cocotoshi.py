@@ -1,43 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for,jsonify
+from flask import Flask, render_template, request, redirect, url_for
 import sqlite3
 from datetime import datetime
-import csv
-
-
 
 app = Flask(__name__)
 DATABASE = 'cocotoshi.db'
-
-
-
-# ---ここからCSV自動補完用の辞書生成コード---
-def load_code2company(csv_path):
-    code2company = {}
-    with open(csv_path, encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            code = row['コード'].strip().zfill(4)      # カラム名に注意！
-            name = row['銘柄名'].strip()               # カラム名に注意！
-            code2company[code] = name
-    return code2company
-
-# プロジェクト直下などに保存したCSVファイル名に合わせてパスを設定
-code2company = load_code2company('code2company.csv')
-# ---ここまで---
-
-
-
-
-# --- 必ず app = Flask() のあとに！ ---
-@app.route('/api/company_name')
-def company_name():
-    code = request.args.get('code', '').zfill(4)
-    name = code2company.get(code, '')
-    return jsonify({'company': name})
-
-
-
-
 
 # データベース初期化
 def init_db():
@@ -108,7 +74,6 @@ def index():
         watch_to_delete=watch_to_delete,
         page=page,
         total_pages=total_pages,
-        current="history"
     )
 
 
@@ -116,71 +81,85 @@ from math import ceil
 
 @app.route("/matrix")
 def matrix():
-    # 1. トレードデータを全部取得
     with sqlite3.connect(DATABASE) as conn:
         c = conn.cursor()
-        c.execute("SELECT * FROM trades ORDER BY date, id")
-        trades = c.fetchall()
+        c.execute("""
+            SELECT 
+                (CASE 
+                    WHEN p.type = 'buy' AND c.type = 'sell' THEN (c.price - p.price) * c.quantity
+                    WHEN p.type = 'sell' AND c.type = 'buy' THEN (p.price - c.price) * c.quantity
+                    ELSE 0
+                END) AS profit,
+                p.feeling as entry_feeling,
+                c.feeling as exit_feeling,
+                p.memo as entry_memo,
+                c.memo as exit_memo,
+                p.date as entry_date,
+                c.date as exit_date,
+                p.id as entry_id   -- ★ この行を必ず追加！
+            FROM trades c
+            JOIN trades p ON c.parent_id = p.id
+            WHERE c.type IN ('sell', 'buy')
+        """)
+        results = c.fetchall()
 
-    # 2. build_trade_treeで正しい履歴情報を構築
-    trade_tree = build_trade_tree(trades)
-    matrix_results = []
+    from datetime import datetime
+    def parse_date_safe(date_str):
+        for fmt in ("%Y-%m-%d", "%Y/%m/%d"):
+            try:
+                return datetime.strptime(date_str, fmt)
+            except Exception:
+                pass
+        return None
 
-    # 3. 各ツリー（親＋子カード）を走査
-    for item in trade_tree:
-        parent = item["parent"]
-        for child in item["children"]:
-            # “反対売買”のみ抽出
-            is_opposite_trade = (
-                (parent["type"] == "buy" and child["type"] == "sell") or
-                (parent["type"] == "sell" and child["type"] == "buy")
-            )
-            if is_opposite_trade and "profits" in child and child["profits"]:
-                for profit in child["profits"]:
-                    # 保有期間（日数）も計算
-                    try:
-                        from datetime import datetime
-                        fmt = "%Y-%m-%d"
-                        entry_date = parent["date"]
-                        exit_date = child["date"]
-                        d0 = datetime.strptime(entry_date, fmt)
-                        d1 = datetime.strptime(exit_date, fmt)
-                        days_held = (d1 - d0).days
-                    except Exception:
-                        days_held = "-"
-                    matrix_results.append((
-                        profit,
-                        parent["feeling"],
-                        child["feeling"],
-                        days_held,
-                        parent.get("memo", ""),
-                        child.get("memo", ""),
-                        child.get("id")
-                    ))
+    new_results = []
+    for row in results:
+         # 期待されるカラム数より短い場合は埋める
+        row = list(row) + [None] * (7 - len(row))
+        profit      = row[0] if row[0] is not None else 0
+        entry_feel  = row[1] if row[1] is not None else 0
+        exit_feel   = row[2] if row[2] is not None else 0
+        entry_memo  = row[3] or ""
+        exit_memo   = row[4] or ""
+        entry_date  = row[5]
+        exit_date   = row[6]
+        entry_id    = row[7]
+        days_held = "-"
+        try:
+            if entry_date and exit_date:
+                d0 = parse_date_safe(entry_date)
+                d1 = parse_date_safe(exit_date)
+                if d0 and d1:
+                    days_held = (d1 - d0).days
+        except Exception:
+            pass
+        # 必ず6列（利益, entry_feel, exit_feel, 保有期間, entry_memo, exit_memo）
+        new_results.append((
+            profit,
+            entry_feel,
+            exit_feel,
+            days_held,
+            entry_memo,
+            exit_memo,
+            entry_id,
+        ))
 
-    # 利益降順でソート
-    matrix_results.sort(key=lambda x: x[0] or 0, reverse=True)
+    new_results.sort(key=lambda x: x[0] or 0, reverse=True)  # 利益降順
 
     # ページネーション
     page = int(request.args.get('page', 1))
     per_page = 10
-    total = len(matrix_results)
+    total = len(new_results)
     total_pages = ceil(total / per_page)
     start = (page - 1) * per_page
     end = start + per_page
-    results_page = matrix_results[start:end]
-
-    for row in results_page:
-        print(row)  # これでページ内に表示される各行が確認できる
-
-
+    results_page = new_results[start:end]
 
     return render_template(
         "matrix.html",
         results=results_page,
         page=page,
-        total_pages=total_pages,
-        current="matrix"
+        total_pages=total_pages
     )
 
 
@@ -195,43 +174,23 @@ def summary():
     with sqlite3.connect(DATABASE) as conn:
         c = conn.cursor()
         c.execute("""
-            SELECT
-    code,
-    stock,
-    purpose,
-    SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
-    - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) AS holding,
-
-    ROUND(
-      CASE
-        WHEN SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
-             - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) > 0 THEN
-          SUM(CASE WHEN type='buy' THEN price * quantity ELSE 0 END)
-          / NULLIF(SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END), 0)
-        WHEN SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
-             - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) < 0 THEN
-          SUM(CASE WHEN type='sell' THEN price * quantity ELSE 0 END)
-          / NULLIF(SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END), 0)
-        ELSE 0
-      END
-    ) AS avg_price,
-
-    CASE
-      WHEN SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
-           - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) > 0 THEN
-        MAX(CASE WHEN type='buy' THEN date END)
-      WHEN SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
-           - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) < 0 THEN
-        MAX(CASE WHEN type='sell' THEN date END)
-      ELSE NULL
-    END AS last_trade_date
-
-FROM trades
-WHERE code IS NOT NULL
-GROUP BY code, stock, purpose
-HAVING holding != 0
-ORDER BY stock
-        """)
+                  SELECT
+                    code,
+                    stock,
+                purpose,
+                 SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
+                  - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) AS holding,
+                    ROUND(
+                      SUM(CASE WHEN type='buy' THEN price * quantity ELSE 0 END) /
+                  NULLIF(SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END), 0), 0
+                    ) AS avg_price,
+                    MAX(CASE WHEN type='buy' THEN date ELSE NULL END) AS last_buy_date
+                  FROM trades
+                WHERE code IS NOT NULL
+                   GROUP BY code, stock, purpose
+                  HAVING holding != 0
+                   ORDER BY stock
+                """)
         summary_data = c.fetchall()
 
     # ページネーション
@@ -247,8 +206,7 @@ ORDER BY stock
         "summary.html",
         summary_data=summary_data_page,
         page=page,
-        total_pages=total_pages,
-        current="summary"
+        total_pages=total_pages
     )
 
 
@@ -258,7 +216,7 @@ ORDER BY stock
 
 @app.route("/settings")
 def settings():
-    return render_template("settings.html",current="settings")
+    return render_template("settings.html")
 
 
 
@@ -286,10 +244,7 @@ def form():
     if request.method == 'POST':
         # POSTされた値を取得
         type = request.form['type']
-        stock = request.form.get("stock", "").strip()
-        if not stock:
-            error_msg = "銘柄名が空です。銘柄コードを入力して自動補完してください。"
-            return render_template('form.html', error_msg=error_msg)
+        stock = request.form['stock']
         price = int(float(request.form['price']))
         quantity = int(request.form['quantity'])
         total = price * quantity
@@ -407,7 +362,8 @@ def form():
                     show_modal = True
                 return redirect(f"/?watch_to_delete={watch_id}") if show_modal else redirect("/")
     today = datetime.today().strftime('%Y-%m-%d')
-    return render_template('form.html', today=today, trade=trade, current="form")
+    return render_template('form.html', today=today, trade=trade)
+
 
 
 
@@ -434,34 +390,25 @@ def delete(id):
 
 @app.route("/history")
 def history():
-    id = request.args.get("id")
-    q = request.args.get("q", "").strip()
-    with sqlite3.connect(DATABASE) as conn:
-        c = conn.cursor()
-        if id:
-            # 1. 親idを特定
-            c.execute("SELECT parent_id FROM trades WHERE id=?", (id,))
-            parent_id_row = c.fetchone()
-            if parent_id_row and parent_id_row[0]:
-                # 子カードなら親idを使う
-                root_id = parent_id_row[0]
-            else:
-                # 親カードなら自分のid
-                root_id = id
-            # 2. 親＋子カードのみ取得
-            c.execute("SELECT * FROM trades WHERE id=? OR parent_id=? ORDER BY date, id", (root_id, root_id))
-            trades = c.fetchall()
-        elif q:
-            # 検索
-            q_like = f"%{q}%"
-            c.execute("SELECT * FROM trades WHERE code LIKE ? ORDER BY date, id", (q_like,))
-            trades = c.fetchall()
-        else:
-            c.execute("SELECT * FROM trades ORDER BY date DESC, id DESC")
-            trades = c.fetchall()
-    trade_tree = build_trade_tree(trades)
-    return render_template("history.html", trade_tree=trade_tree,current="history")
+    entry_id = request.args.get("id")
+    print(f"受け取ったID: {entry_id}")  # ←これでコンソールに出力
+    conn = sqlite3.connect("cocotoshi.db")
+    c = conn.cursor()
+    trades = []
 
+    if entry_id:
+        c.execute("SELECT * FROM trades WHERE id=? OR parent_id=? ORDER BY id", (entry_id, entry_id))
+        trades = c.fetchall()
+    else:
+        c.execute("SELECT * FROM trades")
+        trades = c.fetchall()
+    conn.close()
+
+    # ここでtrade_treeを作成！
+    trade_tree = build_trade_tree(trades)
+    print("trade_tree:", trade_tree)  # デバッグ用
+
+    return render_template("history.html", trade_tree=trade_tree)
 
 
 
@@ -493,14 +440,14 @@ def build_trade_tree(trades):
         id=row[0],
         type=row[1],
         stock=row[2],
-        price=float(row[3]) if row[3] is not None else 0.0,
+        price=int(row[3]) if row[3] is not None else 0,
         quantity=int(row[4]) if row[4] is not None else 0,
-        total=float(row[5]) if row[5] is not None else 0.0,
+        total=int(row[5]) if row[5] is not None else 0,
         date=row[6],
         feeling=row[7],
         memo=row[8],
         parent_id=row[9],
-        code=row[10],
+        code=row[10],  # ← ここ必須！
         remaining_quantity=row[11] if len(row) > 11 else 0,
         purpose=row[12] if len(row) > 12 else ""
     ) for row in trades]
@@ -508,137 +455,120 @@ def build_trade_tree(trades):
     tree = []
 
     for parent in [t for t in trade_list if t["parent_id"] is None]:
-        # 親＋子カードをdate, id順でまとめる
-        trade_chain = sorted(
-            [parent] + [c for c in trade_list if c["parent_id"] == parent["id"]],
+        children = sorted(
+            [c for c in trade_list if c["parent_id"] == parent["id"]],
             key=lambda x: (x["date"], x["id"])
         )
 
-        # 現物・空売り両対応
-        pos_qty = 0          # 現物残数
-        pos_cost = 0.0       # 現物コスト合計
-        avg_price = 0.0      # 現物平均単価
+        # --- 保有数計算 ---
+        if parent["type"] == "buy":
+            total_buy_qty = parent["quantity"] + sum(c["quantity"] for c in children if c["type"] == "buy")
+            total_sell_qty = sum(c["quantity"] for c in children if c["type"] == "sell")
+            remaining = max(total_buy_qty - total_sell_qty, 0)
+        elif parent["type"] == "sell":
+            total_sell_qty = parent["quantity"] + sum(c["quantity"] for c in children if c["type"] == "sell")
+            total_buy_qty = sum(c["quantity"] for c in children if c["type"] == "buy")
+            remaining = max(total_sell_qty - total_buy_qty, 0)
+        else:
+            remaining = 0
 
-        short_qty = 0        # 空売り残数
-        short_cost = 0.0     # 空売りコスト合計
-        short_avg_price = 0.0# 空売り平均単価
+        # --- 平均取得価格計算 ---
+        if parent["type"] == "buy":
+            buy_trades = [parent] + [c for c in children if c["type"] == "buy"]
+            total_buy_qty_for_avg = sum(t["quantity"] for t in buy_trades)
+            total_buy_cost = sum(t["price"] * t["quantity"] for t in buy_trades)
+            avg_price = total_buy_cost / total_buy_qty_for_avg if total_buy_qty_for_avg else 0
+        elif parent["type"] == "sell":
+            sell_trades = [parent] + [c for c in children if c["type"] == "sell"]
+            total_sell_qty_for_avg = sum(t["quantity"] for t in sell_trades)
+            total_sell_cost = sum(t["price"] * t["quantity"] for t in sell_trades)
+            avg_price = total_sell_cost / total_sell_qty_for_avg if total_sell_qty_for_avg else 0
+        else:
+            avg_price = 0
 
+        # --- 利益計算 ---
+        profits = []
+        for child in children:
+            if parent["type"] == "buy" and child["type"] == "sell":
+                profit = (child["price"] - parent["price"]) * child["quantity"]
+                child["profit"] = profit
+                profits.append(profit)
+            elif parent["type"] == "sell" and child["type"] == "buy":
+                profit = (parent["price"] - child["price"]) * child["quantity"]
+                child["profit"] = profit
+                profits.append(profit)
+            else:
+                child["profit"] = None
+
+        # --- ツリー合計利益（全分岐で必ずここでセット！）---
+        total_profit = sum(profits) if profits else 0
+
+
+
+
+        # ✅ 平均取得価格の計算
+        if parent["type"] == "buy":
+           buy_trades = [parent] + [c for c in children if c["type"] == "buy"]
+           total_buy_qty_for_avg = sum(t["quantity"] for t in buy_trades)
+           total_buy_cost = sum(t["price"] * t["quantity"] for t in buy_trades)
+           avg_price = total_buy_cost / total_buy_qty_for_avg if total_buy_qty_for_avg else 0
+
+        elif parent["type"] == "sell":
+               sell_trades = [parent] + [c for c in children if c["type"] == "sell"]
+               total_sell_qty_for_avg = sum(t["quantity"] for t in sell_trades)
+               total_sell_cost = sum(t["price"] * t["quantity"] for t in sell_trades)
+               avg_price = total_sell_cost / total_sell_qty_for_avg if total_sell_qty_for_avg else 0
+
+        else:
+               avg_price = 0
+
+
+
+
+        # ✅ ここから利益計算を差し込む！
         profits = []
 
-        for t in trade_chain:
-            t["profits"] = []
-            q = t["quantity"]
+        for child in children:
+            if parent["type"] == "buy" and child["type"] == "sell":
+                profit = (child["price"] - parent["price"]) * child["quantity"]
+                child["profit"] = profit  # ← 各子に個別利益を追加！
+                profits.append(profit)
 
-            if t["type"] == "buy":
-                if short_qty > 0:
-                    cover_qty = min(q, short_qty)
-                    if cover_qty > 0:
-                        profit = (short_avg_price - t["price"]) * cover_qty
-                        t["profits"].append(profit)
-                        short_cost -= short_avg_price * cover_qty
-                        short_qty -= cover_qty
-                        q -= cover_qty
-                    if q > 0:
-                        pos_cost += t["price"] * q
-                        pos_qty += q
-                        avg_price = pos_cost / pos_qty if pos_qty else 0
-                else:
-                    pos_cost += t["price"] * q
-                    pos_qty += q
-                    avg_price = pos_cost / pos_qty if pos_qty else 0
-
-            elif t["type"] == "sell":
-                if pos_qty > 0:
-                    sell_qty = min(q, pos_qty)
-                    if sell_qty > 0:
-                        profit = (t["price"] - avg_price) * sell_qty
-                        t["profits"].append(profit)
-                        pos_cost -= avg_price * sell_qty
-                        pos_qty -= sell_qty
-                        q -= sell_qty
-                        avg_price = pos_cost / pos_qty if pos_qty else 0
-                    if q > 0:
-                        short_cost += t["price"] * q
-                        short_qty += q
-                        short_avg_price = short_cost / short_qty if short_qty else 0
-                else:
-                    short_cost += t["price"] * q
-                    short_qty += q
-                    short_avg_price = short_cost / short_qty if short_qty else 0
-    # 状態記録などはそのまま
-
+            elif parent["type"] == "sell" and child["type"] == "buy":
+                profit = (parent["price"] - child["price"]) * child["quantity"]
+                child["profit"] = profit
+                profits.append(profit)
 
             else:
-                t["profit"] = None
+                child["profit"] = None  # 利益が関係ない種別の場合はNoneなどでもOK
 
-            # 状態記録（デバッグやUI用）
-            t["pos_qty"] = pos_qty
-            t["short_qty"] = short_qty
-            t["avg_price"] = avg_price
-            t["short_avg_price"] = short_avg_price
-
-        # 子カード（親以外）のみ抽出
-        children = [t for t in trade_chain if t["id"] != parent["id"]]
-
-        total_profit = sum(sum(t["profits"]) for t in trade_chain if "profits" in t and t["profits"])
-
-        is_completed = (pos_qty == 0 and short_qty == 0)
-
-
+        # ✅ tree に利益情報も追加して渡す！
         tree.append({
-            "parent": {
-                "id": parent["id"],
-                "type": parent["type"],
-                "stock": parent["stock"],
-                "price": parent["price"],
-                "quantity": parent["quantity"],
-                "total": parent["total"],
-                "date": parent["date"],
-                "feeling": parent["feeling"],
-                "memo": parent["memo"],
-                "parent_id": parent["parent_id"],
-                "code": parent["code"],
-                "purpose": parent.get("purpose", "")
-            },
-            "children": children,
-            "remaining": pos_qty if pos_qty > 0 else -short_qty,  # 現物なら+残、空売りなら-残
-            "profits": profits,
-            "average_price": avg_price if parent["type"] == "buy" else short_avg_price,
-            "total_profit": total_profit,
-            "is_completed": is_completed   # ←これを追加！！
-        })
+              "parent": {
+              "id": parent["id"],
+              "type": parent["type"],
+              "stock": parent["stock"],
+              "price": parent["price"],
+              "quantity": parent["quantity"],
+              "total": parent["total"],
+              "date": parent["date"],
+              "feeling": parent["feeling"],
+              "memo": parent["memo"],
+              "parent_id": parent["parent_id"],
+              "code": parent["code"],  # ←✨これが今回の主役！
+              "purpose": parent.get("purpose", "")  # ← ここ！
+    },
+    "children": children,
+    "remaining": remaining,
+    "profits": profits,
+    "average_price": avg_price,
+    "total_profit": total_profit
+})
 
     return tree
 
 
 
-
-def calc_moving_average_profit(trades):
-    pos_qty = 0
-    pos_cost = 0.0
-    avg_price = 0.0
-
-    for t in trades:
-        if t["type"] == "buy":
-            pos_cost += t["price"] * t["quantity"]
-            pos_qty += t["quantity"]
-            avg_price = pos_cost / pos_qty if pos_qty else 0
-            t["profit"] = None
-        elif t["type"] == "sell":
-            profit = (t["price"] - avg_price) * t["quantity"]
-            t["profit"] = profit
-            pos_cost -= avg_price * t["quantity"]
-            pos_qty -= t["quantity"]
-            avg_price = pos_cost / pos_qty if pos_qty else 0
-        else:
-            t["profit"] = None
-    return trades
-
-
-
-@app.before_first_request
-def initialize_database():
-    init_db()
-
 if __name__ == '__main__':
+    init_db()
     app.run(host="0.0.0.0", port=5000, debug=True)

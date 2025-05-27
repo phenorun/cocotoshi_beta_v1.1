@@ -108,7 +108,6 @@ def index():
         watch_to_delete=watch_to_delete,
         page=page,
         total_pages=total_pages,
-        current="history"
     )
 
 
@@ -179,8 +178,7 @@ def matrix():
         "matrix.html",
         results=results_page,
         page=page,
-        total_pages=total_pages,
-        current="matrix"
+        total_pages=total_pages
     )
 
 
@@ -195,43 +193,23 @@ def summary():
     with sqlite3.connect(DATABASE) as conn:
         c = conn.cursor()
         c.execute("""
-            SELECT
-    code,
-    stock,
-    purpose,
-    SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
-    - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) AS holding,
-
-    ROUND(
-      CASE
-        WHEN SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
-             - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) > 0 THEN
-          SUM(CASE WHEN type='buy' THEN price * quantity ELSE 0 END)
-          / NULLIF(SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END), 0)
-        WHEN SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
-             - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) < 0 THEN
-          SUM(CASE WHEN type='sell' THEN price * quantity ELSE 0 END)
-          / NULLIF(SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END), 0)
-        ELSE 0
-      END
-    ) AS avg_price,
-
-    CASE
-      WHEN SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
-           - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) > 0 THEN
-        MAX(CASE WHEN type='buy' THEN date END)
-      WHEN SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
-           - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) < 0 THEN
-        MAX(CASE WHEN type='sell' THEN date END)
-      ELSE NULL
-    END AS last_trade_date
-
-FROM trades
-WHERE code IS NOT NULL
-GROUP BY code, stock, purpose
-HAVING holding != 0
-ORDER BY stock
-        """)
+                  SELECT
+                    code,
+                    stock,
+                purpose,
+                 SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
+                  - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) AS holding,
+                    ROUND(
+                      SUM(CASE WHEN type='buy' THEN price * quantity ELSE 0 END) /
+                  NULLIF(SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END), 0), 0
+                    ) AS avg_price,
+                    MAX(CASE WHEN type='buy' THEN date ELSE NULL END) AS last_buy_date
+                  FROM trades
+                WHERE code IS NOT NULL
+                   GROUP BY code, stock, purpose
+                  HAVING holding != 0
+                   ORDER BY stock
+                """)
         summary_data = c.fetchall()
 
     # ページネーション
@@ -247,8 +225,7 @@ ORDER BY stock
         "summary.html",
         summary_data=summary_data_page,
         page=page,
-        total_pages=total_pages,
-        current="summary"
+        total_pages=total_pages
     )
 
 
@@ -258,7 +235,7 @@ ORDER BY stock
 
 @app.route("/settings")
 def settings():
-    return render_template("settings.html",current="settings")
+    return render_template("settings.html")
 
 
 
@@ -407,7 +384,8 @@ def form():
                     show_modal = True
                 return redirect(f"/?watch_to_delete={watch_id}") if show_modal else redirect("/")
     today = datetime.today().strftime('%Y-%m-%d')
-    return render_template('form.html', today=today, trade=trade, current="form")
+    return render_template('form.html', today=today, trade=trade)
+
 
 
 
@@ -454,13 +432,14 @@ def history():
         elif q:
             # 検索
             q_like = f"%{q}%"
-            c.execute("SELECT * FROM trades WHERE code LIKE ? ORDER BY date, id", (q_like,))
+            c.execute(""" ... """, (q_like, q_like, q_like))
             trades = c.fetchall()
         else:
             c.execute("SELECT * FROM trades ORDER BY date DESC, id DESC")
             trades = c.fetchall()
     trade_tree = build_trade_tree(trades)
-    return render_template("history.html", trade_tree=trade_tree,current="history")
+    return render_template("history.html", trade_tree=trade_tree)
+
 
 
 
@@ -603,7 +582,8 @@ def build_trade_tree(trades):
             "children": children,
             "remaining": pos_qty if pos_qty > 0 else -short_qty,  # 現物なら+残、空売りなら-残
             "profits": profits,
-            "average_price": avg_price if parent["type"] == "buy" else short_avg_price,
+            "average_price": avg_price,
+            "short_average_price": short_avg_price,
             "total_profit": total_profit,
             "is_completed": is_completed   # ←これを追加！！
         })
@@ -636,9 +616,8 @@ def calc_moving_average_profit(trades):
 
 
 
-@app.before_first_request
-def initialize_database():
-    init_db()
+
 
 if __name__ == '__main__':
+    init_db()
     app.run(host="0.0.0.0", port=5000, debug=True)
