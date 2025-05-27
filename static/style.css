@@ -1,3 +1,20 @@
+html, body {
+  min-height: 100vh !important;
+  height: 100%;
+  position: relative;
+}
+.main-content {
+  min-height: 100vh !important;
+  padding-bottom: 90px;
+  box-sizing: border-box;
+}
+
+
+
+
+
+
+
 body {
   font-family: sans-serif;
   margin: 0;
@@ -794,6 +811,7 @@ body, .matrix-page {
   box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.1);
   border-top: 1px solid #ddd;
 }
+
 
 
 
