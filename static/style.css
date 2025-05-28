@@ -3,9 +3,10 @@ html, body {
   height: 100%;
   position: relative;
 }
+
 .main-content {
   min-height: 100vh !important;
-  height: 100vh !important;
+  /* height: 100vh !important; ←これを削除！ */
   padding-bottom: 90px !important;
   box-sizing: border-box;
 }
