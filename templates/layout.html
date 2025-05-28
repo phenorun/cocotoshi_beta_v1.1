@@ -81,6 +81,32 @@
 
 </nav>
 
+<script>
+function adjustBottomPadding() {
+  var content = document.querySelector('.main-content');
+  var nav = document.querySelector('.bottom-nav');
+  if (!content || !nav) return;
+
+  var navHeight = nav.offsetHeight || 90;
+  var visualHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  var docHeight = document.body.scrollHeight;
+
+  // 「ページ実高＋ナビ高さ」が画面表示領域より小さければ、余白を増やす
+  if (docHeight < visualHeight + navHeight) {
+    content.style.paddingBottom = (navHeight + 40) + 'px'; // 必要なら+50でもOK
+  } else {
+    content.style.paddingBottom = navHeight + 'px';
+  }
+}
+
+// 初回＋リサイズ時に発動！
+window.addEventListener('DOMContentLoaded', adjustBottomPadding);
+window.addEventListener('resize', adjustBottomPadding);
+</script>
+
+
+
+
 
 
 </body>
