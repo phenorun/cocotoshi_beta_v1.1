@@ -236,15 +236,6 @@ ORDER BY stock
     end = start + per_page
     summary_data_page = summary_data[start:end]
 
-    # --- ここからダミーデータ追加 ---
-    MIN_ROWS = 12
-    dummy_row = ("", "（サンプル）", "", 0, 0, "-", "")  # カラム数は要調整（summary_dataの1行と同じだけ必要）
-
-    while len(summary_data_page) < MIN_ROWS:
-        summary_data_page.append(dummy_row)
-# --- ここまで ---
-
-
     return render_template(
         "summary.html",
         summary_data=summary_data_page,
