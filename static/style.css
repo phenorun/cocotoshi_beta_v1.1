@@ -854,8 +854,17 @@ body, .matrix-page {
   min-width: 0;
 }
 
+/* モーダル内フォームの下部に余白を強制的に追加 */
+#modal form,
+#edit-modal form {
+  padding-bottom: 200px !important; /* 必要に応じてpxを調整（ボトムナビの高さ+α） */
+}
 
 
+#modal > div,
+#edit-modal > div {
+  padding-bottom: 200px !important;
+}
 
 
 
