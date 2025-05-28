@@ -102,14 +102,7 @@ def index():
     trade_tree_page = trade_tree[start:end]
     # --- ページネーションここまで ---
 
-    return render_template(
-        "history.html",
-        trade_tree=trade_tree_page,
-        watch_to_delete=watch_to_delete,
-        page=page,
-        total_pages=total_pages,
-        current="history"
-    )
+    return redirect(url_for('form'))
 
 
 from math import ceil
@@ -396,7 +389,7 @@ def form():
                     WHERE id=?
                 """, (type, stock, price, quantity, total, date, feeling, memo, parent_id, code, purpose, edit_id))
                 conn.commit()
-                return redirect("/")
+                return redirect("/history")
             else:
                 # 新規登録時のみウォッチ削除判定を実行
                 show_modal = False
@@ -414,7 +407,7 @@ def form():
                 trade_count = c.fetchone()[0]
                 if trade_count == 1 and watch_id and type != 'watch':
                     show_modal = True
-                return redirect(f"/?watch_to_delete={watch_id}") if show_modal else redirect("/")
+                return redirect(f"/?watch_to_delete={watch_id}") if show_modal else redirect("/history")
     today = datetime.today().strftime('%Y-%m-%d')
     return render_template('form.html', today=today, trade=trade, current="form")
 
