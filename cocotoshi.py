@@ -236,12 +236,21 @@ ORDER BY stock
 
     # ページネーション
     page = int(request.args.get('page', 1))
-    per_page = 10
+    per_page = 12
     total = len(summary_data)
     total_pages = ceil(total / per_page)
     start = (page - 1) * per_page
     end = start + per_page
     summary_data_page = summary_data[start:end]
+
+    # --- ここからダミーデータ追加 ---
+    MIN_ROWS = 12
+    dummy_row = ("", "（サンプル）", "", 0, 0, "-", "")  # カラム数は要調整（summary_dataの1行と同じだけ必要）
+
+    while len(summary_data_page) < MIN_ROWS:
+        summary_data_page.append(dummy_row)
+# --- ここまで ---
+
 
     return render_template(
         "summary.html",

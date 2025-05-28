@@ -34,32 +34,37 @@
 
 <tbody>
   {% for row in summary_data %}
-      <tr>
-        <td>{{ row[0] }}</td>
-        <td>{{ row[1] }}</td>
-        <td>
-          {% if row[3]|int >= 0 %}
-            <span style="color: blue; font-weight: bold;">買</span>
-          {% else %}
-            <span style="color: red; font-weight: bold;">売</span>
-          {% endif %}
-        </td>
-        <td style="text-align:right;">{{ "{:,}".format(row[3]|int) }}</td>
-        <td style="text-align:right;">{{ "{:,}".format(row[4]|int | abs) }} 円</td>
-        <td>
-          {% set purpose_icons = {
-            '短期': '💹 短期',
-            '長期': '📈 長期',
-            '中期': '📊 中期',
-            '優待': '🎁 優待',
-            '配当': '💰 配当'
-          } %}
-          {{ purpose_icons.get(row[2], row[2] or '-') }}
-            </td>
-            <td>{{ row[5] or '-' }}</td>
-            <td><a href="/history?q={{ row[0] }}">履歴</a></td> <!-- ここ追加 -->
-          </tr>
-      {% endfor %}
+  {% set is_dummy = row[1] == '（サンプル）' %}
+  <tr class="{{ 'dummy-row' if is_dummy else '' }}">
+    <td>{{ row[0] }}</td>
+    <td>{{ row[1] }}</td>
+    <td>
+      {% if row[3]|int >= 0 %}
+        <span style="color: blue; font-weight: bold;">買</span>
+      {% else %}
+        <span style="color: red; font-weight: bold;">売</span>
+      {% endif %}
+    </td>
+    <td style="text-align:right;">{{ "{:,}".format(row[3]|int) }}</td>
+    <td style="text-align:right;">{{ "{:,}".format(row[4]|int | abs) }} 円</td>
+    <td>
+      {% set purpose_icons = {
+        '短期': '💹 短期',
+        '長期': '📈 長期',
+        '中期': '📊 中期',
+        '優待': '🎁 優待',
+        '配当': '💰 配当'
+      } %}
+      {{ purpose_icons.get(row[2], row[2] or '-') }}
+    </td>
+    <td>{{ row[5] or '-' }}</td>
+    <td>
+      {% if not is_dummy %}
+        <a href="/history?q={{ row[0] }}">履歴</a>
+      {% endif %}
+    </td>
+  </tr>
+{% endfor %}
     </tbody>
   </table>
 </div>
