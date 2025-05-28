@@ -91,20 +91,21 @@ function adjustBottomPadding() {
   var visualHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
   var docHeight = document.body.scrollHeight;
 
-  // 「ページ実高＋ナビ高さ」が画面表示領域より小さければ、余白を増やす
   if (docHeight < visualHeight + navHeight) {
-    content.style.paddingBottom = (navHeight + 40) + 'px'; // 必要なら+50でもOK
+    content.style.paddingBottom = (navHeight + 50) + 'px'; // 必要なら増減
   } else {
     content.style.paddingBottom = navHeight + 'px';
   }
 }
 
-// 初回＋リサイズ時に発動！
-window.addEventListener('DOMContentLoaded', adjustBottomPadding);
+// ページ初回読み込み時、2回（遅延付）で実行！
+window.addEventListener('DOMContentLoaded', function() {
+  adjustBottomPadding();
+  setTimeout(adjustBottomPadding, 500); // ←追加で0.5秒後にも再実行
+  setTimeout(adjustBottomPadding, 1500); // ←さらに1.5秒後にも再実行
+});
 window.addEventListener('resize', adjustBottomPadding);
 </script>
-
-
 
 
 
