@@ -838,3 +838,28 @@ body, .matrix-page {
   margin: 0 8px;
 }
 
+
+/* モーダル本体のラッパー（背景）共通で最大サイズ制限＆中央揃え */
+#modal.show > div,
+#edit-modal.show > div {
+  max-height: 92vh;       /* 画面ほぼ全体の高さまでOK */
+  overflow-y: auto;       /* はみ出したら縦スクロール */
+  min-width: 0;
+}
+
+/* スクロールバーを消さず、スマホでも見切れず、PCも中央 */
+#modal > div, #edit-modal > div {
+  max-height: 92vh !important;
+  overflow-y: auto !important;
+  min-width: 0;
+}
+
+
+
+
+
+
+
+
+
+
