@@ -30,8 +30,6 @@
   </tr>
 </thead>
 
-
-
 <tbody>
   {% for row in summary_data %}
   {% set is_dummy = row[1] == '（サンプル）' %}
@@ -39,10 +37,12 @@
     <td>{{ row[0] }}</td>
     <td>{{ row[1] }}</td>
     <td>
-      {% if row[3]|int >= 0 %}
-        <span style="color: blue; font-weight: bold;">買</span>
-      {% else %}
-        <span style="color: red; font-weight: bold;">売</span>
+      {% if not is_dummy %}
+        {% if row[3]|int >= 0 %}
+          <span style="color: blue; font-weight: bold;">買</span>
+        {% else %}
+          <span style="color: red; font-weight: bold;">売</span>
+        {% endif %}
       {% endif %}
     </td>
     <td style="text-align:right;">{{ "{:,}".format(row[3]|int) }}</td>
@@ -64,10 +64,11 @@
       {% endif %}
     </td>
   </tr>
-{% endfor %}
-    </tbody>
-  </table>
-</div>
+  {% endfor %}
+</tbody>
+
+
+
 
 <script>
   document.getElementById('clear-btn').onclick = function() {
@@ -97,10 +98,6 @@
   </div>
 {% endif %}
 </div>
-
-{% if results|length < 10 %}
-  <div style="height: 900px;"></div>
-{% endif %}
 
 
 {% endblock %}
