@@ -824,7 +824,17 @@ body, .matrix-page {
 }
 
 
-
-
-
+.pagination {
+  text-align: center;
+  margin: 1em 0 90px 0;
+  font-size: 1.4em;
+}
+.pagination a {
+  margin: 0 12px;
+  color: #258fd6;
+  text-decoration: none;
+}
+.pagination span {
+  margin: 0 8px;
+}
 

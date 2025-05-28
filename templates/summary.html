@@ -86,18 +86,17 @@
 </div>
 
 <!-- ページネーション表示（テーブル下） -->
+<!-- テーブルの下・ボトムナビの直前に配置 -->
 {% if page is defined and total_pages is defined and total_pages >= 1 %}
-  <div class="pagination" style="text-align:center; margin: 16px 0;">
+  <div class="pagination" style="text-align:center; margin: 1em 0 90px 0; font-size: 1.4em;">
     {% if page > 1 %}
-      <a href="?page={{ page - 1 }}">« 前へ</a>
+      <a href="?page={{ page - 1 }}{% if request.args.get('q') %}&q={{ request.args.get('q') }}{% endif %}">« 前へ</a>
     {% endif %}
     <span style="margin:0 8px;">{{ page }} / {{ total_pages }}</span>
     {% if page < total_pages %}
-      <a href="?page={{ page + 1 }}">次へ »</a>
+      <a href="?page={{ page + 1 }}{% if request.args.get('q') %}&q={{ request.args.get('q') }}{% endif %}">次へ »</a>
     {% endif %}
   </div>
 {% endif %}
-</div>
-
 
 {% endblock %}
