@@ -7,7 +7,7 @@ html, body {
 .main-content {
   min-height: 100vh !important;
   /* height: 100vh !important; ←これを削除！ */
-  padding-bottom: 90px !important;
+  padding-bottom: 120px !important;
   box-sizing: border-box;
 }
 
