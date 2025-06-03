@@ -109,15 +109,13 @@ from math import ceil
 
 @app.route("/matrix")
 def matrix():
-    from math import ceil
-    from datetime import datetime
-    # 1. トレードデータ取得
+    # 1. トレードデータを全部取得
     with sqlite3.connect(DATABASE) as conn:
         c = conn.cursor()
         c.execute("SELECT * FROM trades ORDER BY date, id")
         trades = c.fetchall()
 
-    # 2. build_trade_treeで履歴情報構築
+    # 2. build_trade_treeで正しい履歴情報を構築
     trade_tree = build_trade_tree(trades)
     matrix_results = []
 
@@ -125,13 +123,16 @@ def matrix():
     for item in trade_tree:
         parent = item["parent"]
         for child in item["children"]:
+            # “反対売買”のみ抽出
             is_opposite_trade = (
                 (parent["type"] == "buy" and child["type"] == "sell") or
                 (parent["type"] == "sell" and child["type"] == "buy")
             )
             if is_opposite_trade and "profits" in child and child["profits"]:
                 for profit in child["profits"]:
+                    # 保有期間（日数）も計算
                     try:
+                        from datetime import datetime
                         fmt = "%Y-%m-%d"
                         entry_date = parent["date"]
                         exit_date = child["date"]
@@ -140,29 +141,18 @@ def matrix():
                         days_held = (d1 - d0).days
                     except Exception:
                         days_held = "-"
-                    # ここでexit_dateもtupleに入れる（index 7）
                     matrix_results.append((
-                        profit,                        # 0 利益
-                        parent["feeling"],             # 1
-                        child["feeling"],              # 2
-                        days_held,                     # 3
-                        parent.get("memo", ""),        # 4
-                        child.get("memo", ""),         # 5
-                        child.get("id"),               # 6
-                        exit_date,                     # 7 取引日付（決済日）
-                        parent.get("stock", "")        # 8
+                        profit,
+                        parent["feeling"],
+                        child["feeling"],
+                        days_held,
+                        parent.get("memo", ""),
+                        child.get("memo", ""),
+                        child.get("id")
                     ))
 
-    # 4. 並び順の切り替え
-    sort = request.args.get('sort', 'date_desc')
-    if sort == "date_asc":
-        matrix_results.sort(key=lambda x: x[7])  # 日付昇順
-    elif sort == "profit_desc":
-        matrix_results.sort(key=lambda x: x[0] or 0, reverse=True)
-    elif sort == "profit_asc":
-        matrix_results.sort(key=lambda x: x[0] or 0)
-    else:
-        matrix_results.sort(key=lambda x: x[7], reverse=True)  # デフォ：日付降順（新しい順）
+    # 利益降順でソート
+    matrix_results.sort(key=lambda x: x[0] or 0, reverse=True)
 
     # ページネーション
     page = int(request.args.get('page', 1))
@@ -173,13 +163,17 @@ def matrix():
     end = start + per_page
     results_page = matrix_results[start:end]
 
+    for row in results_page:
+        print(row)  # これでページ内に表示される各行が確認できる
+
+
+
     return render_template(
         "matrix.html",
         results=results_page,
         page=page,
         total_pages=total_pages,
-        current="matrix",
-        sort=sort
+        current="matrix"
     )
 
 
@@ -229,7 +223,7 @@ FROM trades
 WHERE code IS NOT NULL
 GROUP BY code, stock, purpose
 HAVING holding != 0
-ORDER BY last_trade_date DESC
+ORDER BY stock
         """)
         summary_data = c.fetchall()
 
@@ -402,9 +396,9 @@ def form():
                 conn.commit()
                 c.execute("SELECT COUNT(*) FROM trades WHERE code = ? AND type != 'watch'", (code,))
                 trade_count = c.fetchone()[0]
-                if watch_id and type != 'watch':
+                if trade_count == 1 and watch_id and type != 'watch':
                     show_modal = True
-                return redirect(f"/history?watch_to_delete={watch_id}") if show_modal else redirect("/history")
+                return redirect(f"/?watch_to_delete={watch_id}") if show_modal else redirect("/history")
     today = datetime.today().strftime('%Y-%m-%d')
     return render_template('form.html', today=today, trade=trade, current="form")
 
@@ -435,7 +429,6 @@ def delete(id):
 def history():
     id = request.args.get("id")
     q = request.args.get("q", "").strip()
-    watch_to_delete = request.args.get("watch_to_delete")  # ← 追加
     with sqlite3.connect(DATABASE) as conn:
         c = conn.cursor()
         if id:
@@ -460,7 +453,7 @@ def history():
             c.execute("SELECT * FROM trades ORDER BY date DESC, id DESC")
             trades = c.fetchall()
     trade_tree = build_trade_tree(trades)
-    return render_template("history.html", trade_tree=trade_tree, current="history", watch_to_delete=watch_to_delete)  # ← 追加
+    return render_template("history.html", trade_tree=trade_tree,current="history")
 
 
 

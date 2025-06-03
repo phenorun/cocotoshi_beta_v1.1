@@ -105,24 +105,6 @@
   </div>
 {% endif %}
 
-<div class="trade-row memo-row">
-  <strong>コメント:</strong>
-  <span class="memo-short">
-    {{ parent.memo.splitlines()[0] if parent.memo else '（なし）' }}
-    {% if parent.memo and (parent.memo.count('\n') > 0 or parent.memo|length > 32) %}
-      <button class="memo-toggle" onclick="toggleMemo(this, 'parent-memo-{{ parent.id }}'); return false;">▼</button>
-    {% endif %}
-  </span>
-</div>
-<div class="memo-full" id="parent-memo-{{ parent.id }}" style="display:none;">
-  {{ parent.memo|default('')|safe }}
-</div>
-
-
-
-
-
-
   {# ▼ボタンを削除 #}
 
       <div class="trade-actions">
@@ -207,18 +189,6 @@
           {% endfor %}
           {% endif %}
 
-        <div class="trade-row memo-row">
-        <strong>コメント:</strong>
-        <span class="memo-short">
-        {{ child.memo.splitlines()[0] if child.memo else '（なし）' }}
-        {% if child.memo and (child.memo.count('\n') > 0 or child.memo|length > 32) %}
-            <button class="memo-toggle" onclick="toggleMemo(event, this, 'child-memo-{{ child.id }}'); return false;">▼</button>
-        {% endif %}
-        </span>
-        </div>
-        <div class="memo-full" id="child-memo-{{ child.id }}" style="display:none;">
-        {{ child.memo|default('')|safe }}
-        </div>
 
 
 
@@ -389,11 +359,9 @@
 <script>
   // Pythonから値を受け取る安全な方法
   const watchToDelete = {{ (watch_to_delete or None) | tojson }};
-  document.addEventListener("DOMContentLoaded", function() {
   if (watchToDelete) {
     showWatchDeleteModal(watchToDelete);
   }
-  });
 
   // 編集モーダル（親も子も .edit-link 共通）
 document.querySelectorAll('.edit-link').forEach(function(btn) {
@@ -487,6 +455,9 @@ document.querySelectorAll('.edit-link').forEach(function(btn) {
     document.getElementById("watch-cancel").onclick = () => {
       modal.classList.remove("show");
     };
+  }
+  if (watchToDelete) {
+    showWatchDeleteModal(watchToDelete);
   }
 
   // 共通：閉じる
@@ -611,8 +582,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 document.addEventListener("DOMContentLoaded", () => {
-
-  /* 
   document.querySelectorAll('.trade-card.parent').forEach(parentCard => {
     parentCard.addEventListener('click', function(e) {
       // クリック元が編集・削除リンクなどだった場合は無視
@@ -635,7 +604,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   });
-  */
 });
 
 
@@ -682,51 +650,13 @@ document.getElementById('modal').addEventListener('mousedown', function(e) {
 
 
 
-</script>
-
-<script>
-function toggleMemo(event, btn, id) {
-  event.stopPropagation();
-  var elem = document.getElementById(id);
-  if (!elem) return;
-  if (elem.style.display === "none" || elem.style.display === "") {
-    elem.style.display = "block";
-    btn.textContent = "▲";
-  } else {
-    elem.style.display = "none";
-    btn.textContent = "▼";
-  }
-}
-
-// 追加売買履歴バッジのみで子カード開閉する
-document.querySelectorAll('.has-children-badge').forEach(badge => {
-  badge.addEventListener('click', function(e) {
-    e.stopPropagation(); // 念のため
-    const parentCard = badge.closest('.trade-card');
-    const tradeId = parentCard.getAttribute('data-trade-id');
-    const children = document.querySelector(`.children-wrap[data-trade-id='${tradeId}']`);
-    if (!children) return;
-    const isCollapsed = children.classList.toggle('collapsed');
-    // バッジラベル更新
-    if (isCollapsed) {
-      badge.textContent = '＋ 追加売買履歴あり（タップで表示）';
-    } else {
-      badge.textContent = '▲ 追加売買履歴を閉じる';
-    }
-  });
-});
-
-
 
 
 
 
 </script>
 
-
-
-
-
+<div style="height: 30vh;"></div>
 
 
 {% endblock %}

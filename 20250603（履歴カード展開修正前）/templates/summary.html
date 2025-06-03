@@ -47,20 +47,15 @@
     <td style="text-align:right;">{{ "{:,}".format(row[3]|int) }}</td>
     <td style="text-align:right;">{{ "{:,}".format(row[4]|int | abs) }} 円</td>
     <td>
-  {% set purpose_icons = {
-    '短期': '💹 短期',
-    '長期': '📈 長期',
-    '中期': '📊 中期',
-    '優待': '🎁 優待',
-    '配当': '💰 配当',
-    'benefit': '💹 利益',
-    'dividend': '💰 配当',
-    'long': '📈 長期',
-    'middle': '📊 中期',
-    'short': '💹 短期'
-  } %}
-  {{ purpose_icons.get(row[2], row[2] or '-') }}
-</td>
+      {% set purpose_icons = {
+        '短期': '💹 短期',
+        '長期': '📈 長期',
+        '中期': '📊 中期',
+        '優待': '🎁 優待',
+        '配当': '💰 配当'
+      } %}
+      {{ purpose_icons.get(row[2], row[2] or '-') }}
+    </td>
     <td>{{ row[5] or '-' }}</td>
     <td>
       <a href="/history?q={{ row[0] }}">履歴</a>

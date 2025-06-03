@@ -1015,7 +1015,6 @@ body, .matrix-page {
   font-size: 0.98em;
   margin: 0 2px;
   padding: 0;
-  /* text-align: right; ←これはflexなら不要！ */
 }
 .matrix-memo-text {
   overflow: hidden;
@@ -1026,7 +1025,7 @@ body, .matrix-page {
   line-height: 1.3;
 }
 .memo-toggle {
-  margin-left: auto;     /* ←これで右端にピタッと寄る！！ */
+  margin-left: 6px;
   font-size: 0.95em;
   padding: 0 2px;
   background: #f0f4fa;
@@ -1035,47 +1034,10 @@ body, .matrix-page {
   cursor: pointer;
   height: 1.7em;
   line-height: 1;
-  margin-top: 0.2em;
 }
 
 
-.matrix-row-pair {
-  display: flex;
-  align-items: flex-start;
-  margin-bottom: 0.2em;
-  gap: 0.4em;
-}
-.matrix-label-fixed {
-  width: 90px;            /* ← ここを「px」にして絶対値に！必要なら85px、90pxに調整 */
-  min-width: 80px;
-  text-align: right;
-  font-weight: bold;
-  font-size: 0.9em;
-  line-height: 1.1;
-  margin-right: 0.5em;
-  letter-spacing: 0.15em;
-  white-space: nowrap;    /* ← これで改行禁止！！ */
-}
 
-.matrix-memo {
-  flex: 1;
-}
-
-
-.matrix-memo-full {
-  display: flex;
-  align-items: flex-start;
-  white-space: pre-line;
-  /* 幅が小さい場合はwrapしたければflex-wrap: wrap;でもOK */
-}
-.matrix-memo-full-text {
-  flex: 1 1 auto;
-  /* 文章が長くても残り幅で折り返す */
-}
-.memo-toggle {
-  margin-left: auto;
-  /* 既存のままでOKだが、右端にピタッと寄るように */
-}
 
 
 
