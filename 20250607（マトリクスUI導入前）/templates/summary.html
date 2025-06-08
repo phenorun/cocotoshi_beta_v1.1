@@ -112,36 +112,11 @@
           } %}
           {{ purpose_icons.get(row[2], row[2] or '-') }}
         </span>
-          <span class="summary-feeling-label"
-                style="
-                  display:inline-block;
-                  min-width:52px;
-                  padding:4px 18px;
-                  border-radius:20px;
-                  font-weight:bold;
-                  color:#fff;
-                  text-align:center;
-                  background: 
-                    {% set c = row[6]|int %}
-                    {% if c == 0 %}#eb5757
-                    {% elif c == 1 %}#fa8686
-                    {% elif c == 2 %}#bbbbbb
-                    {% elif c == 3 %}#64b5f6
-                    {% elif c == 4 %}#2980ef
-                    {% else %}#888
-                    {% endif %}
-                  ">
-            {{ entry_feelings[row[6]|int] }}
-          </span>
-
+        <span class="summary-feeling">😊</span> {# ←お好みで感情データに差し替えOK #}
         <button class="summary-btn" onclick="location.href='/history?q={{ row[0] }}'">履歴</button>
       </div>
       <div class="summary-card-row2">
-        <span>保有日数: 
-          {% if row[7] != '-' %}{{ row[7] }} 日
-          {% else %}－
-          {% endif %}
-        </span>
+        <span>保有日数: －</span>  <!-- 保有日数の計算が未実装なら「－」のまま -->
         <span>株数: {{ "{:,}".format(row[3]|int) }}</span>
         <!-- 必要に応じて追加で平均取得単価や日付もここに -->
       </div>

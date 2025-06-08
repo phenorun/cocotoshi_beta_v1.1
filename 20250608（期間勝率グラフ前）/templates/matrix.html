@@ -15,6 +15,9 @@
 
 
 
+
+
+
 <div class="matrix-page">
 
   <h2 style="margin-bottom:0;">🧠 感情 × 利益マトリクス</h2>
@@ -24,8 +27,6 @@
     <button class="tab-btn" onclick="showTab('purpose')">目的×期間×勝率</button>
     <button class="tab-btn" onclick="showTab('data')">生データ</button>
   </div>
-
-   <!-- 感情ヒートマップ -->
 
 <div id="tab-heatmap" class="tab-content active">
   <div class="matrix-wrapper" style="overflow-x:auto;width:100vw;-webkit-overflow-scrolling:touch;">
@@ -66,92 +67,10 @@
 
 
 
-<!-- 期間勝率グラフ -->
-<!-- Chart.jsのCDNは<head>内 or ここで一度だけ読み込みでOK（複数回不要）-->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<div id="tab-purpose" class="tab-content" style="display:none">
-  <h3 style="margin-top:0;">目的 × 保有期間 × 勝率</h3>
-  <canvas id="purposeChart" style="max-width:720px; width:100%;"></canvas>
-</div>
-<script>
-const purposeGraphData = {{ purpose_graph_data | tojson | safe }};
-document.addEventListener('DOMContentLoaded', function() {
-  if (!purposeGraphData || !purposeGraphData.length) return;
-  const ctx = document.getElementById('purposeChart').getContext('2d');
-  const labels = purposeGraphData.map(x => x.purpose);
-  const avgDays = purposeGraphData.map(x => x.avg_days);
-  const winRates = purposeGraphData.map(x => x.win_rate);
-
-  new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [
-        {
-          type: 'bar',
-          label: '平均保有期間（日）',
-          data: avgDays,
-          backgroundColor: '#0af',
-          yAxisID: 'y-days',
-          order: 1,
-        },
-        {
-          type: 'line',
-          label: '勝率（%）',
-          data: winRates,
-          borderColor: '#e91e63',
-          backgroundColor: '#e91e63',
-          yAxisID: 'y-win',
-          tension: 0.25,
-          pointRadius: 4,
-          fill: false,
-          order: 2,
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: {
-          display: true,
-          position: 'top',
-        },
-        tooltip: { enabled: true }
-      },
-      scales: {
-        x: { title: { display: true, text: '投資目的' } },
-        'y-days': {
-          position: 'left',
-          title: { display: true, text: '平均保有期間（日）' },
-          beginAtZero: true,
-        },
-        'y-win': {
-          position: 'right',
-          title: { display: true, text: '勝率（%）' },
-          beginAtZero: true,
-          max: 100,
-          grid: { drawOnChartArea: false },
-        }
-      }
-    }
-  });
-});
-</script>
 
 
+<div id="tab-purpose" class="tab-content" style="display:none">ここにグラフ</div>
 
-
-
-
-
-</div>
-
-
-
-
-
-
-   <!-- 生データ -->
 
 
 <div id="tab-data" class="tab-content" style="display:none">

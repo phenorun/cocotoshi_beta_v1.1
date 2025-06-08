@@ -5,6 +5,8 @@ html, body {
 }
 
 .main-content {
+  min-height: 100vh !important;
+  /* height: 100vh !important; ←これを削除！ */
   padding-bottom: 120px !important;
   box-sizing: border-box;
 }
@@ -394,22 +396,21 @@ a.edit-link {
 /* 投資目的ラジオも感情と同じく装飾 */
 .purpose-options {
   display: flex;
-  justify-content: space-between;
-  margin: 0.7em 0 0.3em 0;
-  width: 100%;
-  max-width: 700px;
-  min-width: 0;
-  gap: 3.0em;   /* ←ここでしっかり間隔確保 */
-  align-items: center;
+  justify-content: center;
+  gap: 3em; /* 感情と揃える（必要なら調整OK） */
+  margin-bottom: 1em;
+  margin-top: 0.5em;
 }
 
-
 .purpose-options label {
-  flex: 1 1 0;
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.2em;
+  cursor: pointer;
+  font-size: 1.05em;
+  padding: 6px 0;
+  /* 選択範囲を広げて押しやすく */
 }
 
 .purpose-radio {
@@ -417,7 +418,7 @@ a.edit-link {
 }
 
 .purpose-icon {
-  font-size: 4.0em; /* ← 感情アイコンと完全一致させるなら1.5~2.5emで調整 */
+  font-size: 1.5em; /* ← 感情アイコンと完全一致させるなら1.5~2.5emで調整 */
   margin-bottom: 0.2em;
   display: block;
 }
@@ -700,6 +701,7 @@ a.edit-link {
 
 .main-content {
   padding-bottom: 90px;
+  min-height: 100vh;
   box-sizing: border-box;
 }
 
@@ -714,6 +716,7 @@ a.edit-link {
 
 
 body, .matrix-page {
+  min-height: 100vh;
   position: relative;
 }
 
@@ -1074,459 +1077,7 @@ body, .matrix-page {
   /* 既存のままでOKだが、右端にピタッと寄るように */
 }
 
-.trade-card {
-  border-radius: 10px;
-  box-shadow: 0 1px 3px #0002;
-  margin-bottom: 10px;
-  padding: 10px 8px;
-  background: #fff;
-  transition: box-shadow 0.2s;
-}
-.trade-card:active {
-  box-shadow: 0 2px 8px #338bfd44;
-}
-.stock-name {
-  font-weight: bold;
-  font-size: 1.03em;
-  margin-bottom: 2px;
-  color: #333;
-}
-.trade-summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  font-size: 0.97em;
-}
-.trade-date {
-  color: #338bfd;
-  font-weight: bold;
-  font-size: 0.95em;
-  margin-right: 6px;
-  min-width: 90px;
-}
-.trade-profit.profit { color: #008060; font-weight: bold; }
 
-.trade-profit.loss { color: #dc143c; font-weight: bold; }
-
-.feelings {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 1.22em;
-  margin-left: 8px;
-  margin-right: 8px;
-}
-.feeling-icon {
-  min-width: 1.5em;
-  text-align: center;
-  display: inline-block;
-}
-.arrow {
-  font-size: 1.15em;
-  color: #888;
-  margin: 0 2px;
-  min-width: 1.5em;
-  text-align: center;
-  display: inline-block;
-}
-
-.history-link {
-  margin-left: 12px;
-  color: #338bfd;
-  text-decoration: underline;
-  font-size: 0.97em;
-  white-space: nowrap;
-}
-.expand-toggle {
-  margin-left: 10px;
-  cursor: pointer;
-  font-size: 1em;
-  color: #338bfd;
-  user-select: none;
-}
-.trade-detail {
-  margin-top: 4px;
-  font-size: 0.98em;
-  color: #222;
-  background: #f7faff;
-  padding: 7px 8px 5px 8px;
-  border-radius: 7px;
-  /* スマホでも見やすいように */
-  word-break: break-all;
-}
-@media (max-width: 600px) {
-  .trade-card {
-    padding: 8px 2px;
-  }
-  .stock-name { font-size: 0.95em;}
-  .trade-summary { font-size: 0.93em; flex-wrap: wrap; }
-  .feelings { font-size: 1.06em;}
-  .history-link { font-size: 0.93em;}
-}
-.trade-summary-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;   /* スマホ幅でもはみ出しにくい */
-  gap: 0.4em;        /* 要素間の余白 */
-  font-size: 1.15em; /* 必要なら調整してOK */
-  margin-bottom: 0.2em;
-  width: 100%;
-}
-.trade-date {
-  min-width: 5.7em;
-  font-weight: bold;
-  color: #2b6cb0;
-  text-align: left;
-}
-.stock-name {
-  min-width: 5.7em;
-  font-weight: bold;
-  color: #2b6cb0;
-}
-.trade-profit {
-  min-width: 5.3em;
-  font-weight: bold;
-  text-align: left;
-}
-.feelings {
-  display: flex;
-  align-items: center;
-  gap: 0.2em;
-}
-.feeling-icon {
-  font-size: 1.5em;
-}
-.arrow {
-  font-size: 1.2em;
-  color: #888;
-  margin: 0 0.12em;
-}
-.history-link {
-  color: #1976d2;
-  font-weight: bold;
-  margin-left: 0.4em;
-  text-decoration: none;
-}
-.expand-toggle {
-  margin-left: auto;
-  font-size: 0.8em;
-  cursor: pointer;
-  color: #1976d2;
-}
-
-.trade-info-row {
-  display: flex;
-  align-items: center;
-  gap: 0.4em;
-  margin: 0.2em 0;
-  font-size: 1.1em;
-}
-.feel-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.1em;
-  height: 2.1em;
-  font-size: 1.35em;
-  border-radius: 0.6em;
-  color: #fff;
-  margin: 0 0.1em;
-  font-family: inherit;
-}
-.badge-0 { background: #cb3234; } /* ネガティブ: 赤 */
-.badge-1 { background: #e69c39; } /* やや不安: オレンジ */
-.badge-2 { background: #46b3c6; } /* ふつう: 水色 */
-.badge-3 { background: #64c84b; } /* まあまあ: 緑 */
-.badge-4 { background: #5b8eee; } /* ハッピー: 青紫 */
-.purpose {
-  margin-left: 0.4em;
-  font-size: 0.97em;
-  color: #666;
-  background: #f1f1f1;
-  border-radius: 0.4em;
-  padding: 0.1em 0.6em;
-}
-.memo-toggle {
-  margin-left: 0.5em;
-  color: #2774b1;
-  cursor: pointer;
-  font-size: 0.99em;
-  user-select: none;
-}
-.history-link {
-  margin-left: 0.7em;
-  color: #2774b1;
-  font-weight: bold;
-  text-decoration: none;
-}
-.trade-memo {
-  margin-top: 0.25em;
-  font-size: 0.96em;
-  color: #333;
-}
-
-
-.heatmap-table {
-  border-collapse: collapse; margin: 0 auto; width: 90%; max-width: 420px; font-size: 1.1em;
-}
-.heatmap-table th, .heatmap-table td {
-  border: 1px solid #ccc;
-  text-align: center; padding: 0.7em 0.5em;
-  min-width: 44px;
-}
-.heatmap-table th { background: #f8f9fb; font-weight: bold; }
-.heat.positive { background: #d6f5df; color: #028c30; font-weight: bold; }
-.heat.negative { background: #ffe2e2; color: #ce2c2c; font-weight: bold; }
-.heat.neutral  { background: #f3f3f3; color: #888; font-weight: normal; }
-
-@media (max-width: 600px) {
-  .heatmap-table {
-    width: 100% !important;
-    min-width: 0 !important;
-    font-size: 0.90em;
-    table-layout: fixed;
-  }
-  .heatmap-table th,
-  .heatmap-table td {
-    min-width: 0;
-    padding: 0.2em 0.1em;
-    font-size: 0.98em;
-    word-break: keep-all;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .heatmap-table th:first-child {
-    font-size: 0.93em;
-    width: 2.5em;
-    min-width: 2em;
-  }
-}
-
-.tab-content { display:none; }
-.tab-content.active { display:block; }
-
-
-.feeling-options {
-  display: flex;
-  justify-content: space-between;
-  margin: 0.7em 0 0.3em 0;
-  width: 100%;        /* ← これでOK！ */
-  max-width: 700px;   /* 必要なら調整。レスポンシブならこの行削除も可 */
-  min-width: 0;       /* ← min-widthは0にしておくと安全 */
-  overflow-x: visible; /* ← スクロールバーを完全に消す */
-}
-
-
-.feeling-label {
-  display: inline-block;
-  min-width: 2.7em;
-  text-align: center;
-  padding: 0.3em 1em;
-  border-radius: 1.5em;
-  font-weight: bold;
-  color: #fff;
-  font-size: 1.1em;
-  letter-spacing: 0.05em;
-  cursor: pointer;
-  transition: box-shadow 0.1s;
-  box-shadow: 0 1px 8px #eee;
-}
-
-.feeling-options label {
-  flex: 1 1 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.1em;
-}
-
-/* 各感情ラベルの色分け */
-.feeling-label.feeling-0 { background: #e53935; color: #fff;}   /* 恐怖（赤） */
-.feeling-label.feeling-1 { background: #d98b8a; color: #fff;}   /* 不安（薄赤） */
-.feeling-label.feeling-2 { background: #bdbdbd; color: #222; }    /* 普通（黄・黒抜き） */
-.feeling-label.feeling-3 { background: #64b5f6; color: #fff;}   /* 強気（薄青） */
-.feeling-label.feeling-4 { background: #1976d2; color: #fff;}   /* 焦り（青） */
-
-/* ラジオボタンを目立たなく（または非表示） */
-.feeling-options input[type="radio"] {
-  display: none;  /* ←完全非表示 */
-}
-
-/* 選択中のラベルを強調 */
-.feeling-options input[type="radio"]:checked + .feeling-label {
-  border: 2.5px solid #007bff;
-  padding: 0.5em 2em;
-
-}
-
-
-
-.summary-card {
-  max-width: 100vw;
-  width: 100%;
-  box-sizing: border-box;
-  /* 必要ならpaddingも調整 */
-}
-
-html, body {
-  width: 100%;
-  max-width: 100vw;
-  overflow-x: hidden !important;
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-*, *::before, *::after {
-  box-sizing: inherit;
-}
-
-
-.summary-cards-container,
-.summary-card {
-  max-width: 100vw !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
-  overflow-x: hidden !important;
-}
-
-.bottom-nav {
-  position: fixed !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  width: 100% !important;
-  max-width: 100vw !important;
-  z-index: 9999 !important;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
-  border-top: 1px solid #ddd;
-  background: #f4f4f4;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  padding: 0.7em 0 0.3em 0;
-}
-
-@media (max-width: 600px) {
-  .summary-cards-container, .summary-card {
-    max-width: 100vw !important;
-    width: 100% !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-  }
-}
-
-
-.matrix-table-scroll {
-  width: 100vw;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.matrix-table {
-  min-width: 600px; /* 列数に応じて調整OK。例: 6列なら600pxなど */
-  width: max-content;
-}
-
-.tab-content, .matrix-page {
-  max-width: 100vw !important;
-  width: 100vw !important;
-  overflow-x: visible !important;
-}
-
-
-.heatmap-table {
-  width: max-content !important;
-  min-width: 550px !important;
-  max-width: none !important;
-}
-
-
-.matrix-wrapper {
-  width: 100%;
-  overflow-x: auto;
-}
-
-.matrix-table {
-  min-width: 600px;  /* 必ずスマホ幅を超える値に */
-  width: max-content;
-  border-collapse: collapse;
-}
-
-.matrix-table th,
-.matrix-table td {
-  border: 1px solid #ccc;
-  padding: 0.7em 0.5em;
-  min-width: 44px;
-  text-align: center;
-}
-
-@media (max-width: 600px) {
-  .matrix-table {
-    min-width: 500px; /* 例：スマホ用に調整 */
-  }
-}
-
-
-
-.main-content {
-  overflow-x: visible !important; /* ここが意外と効く！ */
-  width: 100vw;
-  max-width: 100vw;
-}
-body {
-  overflow-x: visible !important; /* これも追加！ */
-  width: 100vw;
-  max-width: 100vw;
-}
-
-html, body, .matrix-page, .main-content, .tab-content {
-  width: 100vw !important;
-  max-width: 100vw !important;
-  overflow-x: hidden !important;
-  box-sizing: border-box !important;
-}
-
-.matrix-wrapper {
-  width: 100vw !important;
-  max-width: 100vw !important;
-  overflow-x: auto !important;
-  -webkit-overflow-scrolling: touch;
-}
-
-.matrix-table {
-  min-width: 650px;   /* 例：列数が増えた場合は適宜調整 */
-  width: max-content;
-}
-
-
-
-
-.matrix-wrapper {
-  width: 100vw !important;
-  max-width: 100vw !important;
-  overflow-x: auto !important;
-  -webkit-overflow-scrolling: touch;
-  /* 下の隙間なくしたい場合はpadding-bottom等は0に */
-}
-.matrix-table {
-  min-width: 650px;
-  width: max-content;
-}
-
-@media (max-width: 600px) {
-  .matrix-table {
-    min-width: 500px;
-  }
-}
-
-/* ★bodyやmain-contentのoverflow-x: hidden !important;はこの画面だけOFFに上書き！ */
-body.matrix-overflow-fix,
-.matrix-page.matrix-overflow-fix,
-.main-content.matrix-overflow-fix {
-  overflow-x: visible !important;
-}
 
 
 

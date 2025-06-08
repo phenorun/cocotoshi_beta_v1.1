@@ -65,8 +65,8 @@
   <div class="trade-row"><strong>日付:</strong> {{ parent.date }}</div>
   <div class="trade-row">
     <strong>感情:</strong>
-    <span class="feeling-label feeling-{{ parent.feeling }}">
-      {{ entry_feelings[parent.feeling] }}
+    <span class="feeling-{{ parent.feeling }}">
+      {{ ['','😖 ネガティブ','😞 やや不安','😐 ふつう','🙂 まあまあ','😄 ハッピー'][parent.feeling] }}
     </span>
   </div>
 
@@ -80,38 +80,30 @@
 
 
 {% if parent.purpose %}
-  {% set icon_list = ['💹', '📊', '📈', '🎁', '💰'] %}
-  {% set label_list = ['短期', '中期', '長期', '優待', '配当'] %}
+  {% set purpose_map = {
+    '短期': 'short', '中期': 'middle', '長期': 'long', '優待': 'benefit', '配当': 'dividend',
+    'short': 'short', 'middle': 'middle', 'long': 'long', 'benefit': 'benefit', 'dividend': 'dividend'
+  } %}
+  {% set p = purpose_map.get(parent.purpose, parent.purpose) %}
   <div class="trade-row" style="display:flex; align-items:center;">
     <strong style="margin-right:8px;">目的:</strong>
     <span class="purpose-label" style="display:inline-flex; align-items:center; gap:4px;">
-      {# 数値かどうか判定して処理を分岐 #}
-      {% if parent.purpose in ['short', 'middle', 'long', 'benefit', 'dividend'] %}
-        {% if parent.purpose == 'short' %}
-          <span class="purpose-icon">💹</span>短期
-        {% elif parent.purpose == 'middle' %}
-          <span class="purpose-icon">📊</span>中期
-        {% elif parent.purpose == 'long' %}
-          <span class="purpose-icon">📈</span>長期
-        {% elif parent.purpose == 'benefit' %}
-          <span class="purpose-icon">🎁</span>優待
-        {% elif parent.purpose == 'dividend' %}
-          <span class="purpose-icon">💰</span>配当
-        {% endif %}
+      {% if p == "short" %}
+        <span class="purpose-icon">💹</span>短期
+      {% elif p == "middle" %}
+        <span class="purpose-icon">📊</span>中期
+      {% elif p == "long" %}
+        <span class="purpose-icon">📈</span>長期
+      {% elif p == "benefit" %}
+        <span class="purpose-icon">🎁</span>優待
+      {% elif p == "dividend" %}
+        <span class="purpose-icon">💰</span>配当
       {% else %}
-        {# 数字として扱う。数字以外ならそのまま出す #}
-        {% set idx = parent.purpose|int(default=-1) %}
-        {% if 0 <= idx < 5 %}
-          <span class="purpose-icon">{{ icon_list[idx] }}</span>{{ label_list[idx] }}
-        {% else %}
-          <span class="purpose-icon">◆</span>{{ parent.purpose }}
-        {% endif %}
+        <span class="purpose-icon">◆</span>{{ parent.purpose }}
       {% endif %}
     </span>
   </div>
 {% endif %}
-
-
 
 <div class="trade-row memo-row">
   <strong>コメント:</strong>
@@ -197,11 +189,9 @@
 
         <div class="trade-row"><strong>日付:</strong> {{ child.date }}</div>
         <div class="trade-row"><strong>感情:</strong>
-          {% if child.type in ['sell', 'buyback'] and parent.type in ['buy', 'sell'] %}
-          <span class="feeling-label feeling-{{ child.feeling }}">
-            {{ exit_feelings[child.feeling] }}
+          <span class="feeling-{{ child.feeling }}">
+            {{ ['','😖 ネガティブ','😞 やや不安','😐 ふつう','🙂 まあまあ','😄 ハッピー'][child.feeling] }}
           </span>
-          {% endif %}
         </div>
 
 
@@ -295,10 +285,13 @@
         <label>日付：<input type="date" name="date" required></label>
       </div>
         <label>感情：
-          <select name="feeling" id="feeling-select" required>
-            {% for feeling in exit_feelings %}
-              <option value="{{ loop.index0 }}">{{ feeling }}</option>
-            {% endfor %}
+          <select name="feeling">
+            <option value="0">未設定</option>
+            <option value="1">😖</option>
+            <option value="2">😞</option>
+            <option value="3">😐</option>
+            <option value="4">🙂</option>
+            <option value="5">😄</option>
           </select>
         </label>
       </div>
@@ -723,12 +716,7 @@ document.querySelectorAll('.has-children-badge').forEach(badge => {
   });
 });
 
-const feelingColors = ["#e53935", "#ef5350", "#bdbdbd", "#64b5f6", "#1976d2"];
-document.getElementById('feeling-select').addEventListener('change', function(e){
-    const sel = e.target;
-    sel.style.backgroundColor = feelingColors[sel.selectedIndex];
-    sel.style.color = (sel.selectedIndex === 2 ? "#222" : "#fff");
-});
+
 
 
 

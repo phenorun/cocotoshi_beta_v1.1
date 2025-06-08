@@ -57,17 +57,34 @@
     <input type="date" name="date" id="date">
     </label>
 
-<label>感情：</label>
+    <label>感情：</label>
 <div class="feeling-options">
-  {% for feeling in entry_feelings %}
-    <label>
-      <input type="radio" name="feeling" value="{{ loop.index0 }}" {% if loop.index0 == 2 %}checked{% endif %} required>
-      <span class="feeling-label feeling-{{ loop.index0 }}">{{ feeling }}</span>
-    </label>
-  {% endfor %}
+  <label class="feeling-1">
+    <input type="radio" name="feeling" value="1" class="feeling-radio">
+    <span class="feeling-icon">😖</span>
+    <span class="feeling-label">ネガティブ</span>
+  </label>
+  <label class="feeling-2">
+    <input type="radio" name="feeling" value="2" class="feeling-radio">
+    <span class="feeling-icon">😞</span>
+    <span class="feeling-label">やや不安</span>
+  </label>
+  <label class="feeling-3">
+    <input type="radio" name="feeling" value="3" class="feeling-radio">
+    <span class="feeling-icon">😐</span>
+    <span class="feeling-label">ふつう</span>
+  </label>
+  <label class="feeling-4">
+    <input type="radio" name="feeling" value="4" class="feeling-radio">
+    <span class="feeling-icon">🙂</span>
+    <span class="feeling-label">まあまあ</span>
+  </label>
+  <label class="feeling-5">
+    <input type="radio" name="feeling" value="5" class="feeling-radio">
+    <span class="feeling-icon">😄</span>
+    <span class="feeling-label">ハッピー</span>
+  </label>
 </div>
-
-
    
 
 <label>投資目的：</label>

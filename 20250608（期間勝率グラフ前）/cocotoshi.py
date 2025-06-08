@@ -146,8 +146,6 @@ def matrix():
     from math import ceil
     from datetime import datetime
     import numpy as np
-    # cocotoshi.py の matrix() 関数内の "matrix_results" 算出後、return直前に追記
-    from collections import defaultdict
     # 1. トレードデータ取得
     with sqlite3.connect(DATABASE) as conn:
         c = conn.cursor()
@@ -221,10 +219,6 @@ def matrix():
 
 
 
-    # 投資目的ラベル
-    purpose_labels = ["短期", "中期", "長期", "優待", "配当"]
-
-
     heatmap_trades = []
     for item in trade_tree:
         parent = item["parent"]
@@ -241,43 +235,6 @@ def matrix():
 
     # ヒートマップデータ作成
     heatmap = calc_heatmap(heatmap_trades)
-
-
-    # 集計用辞書
-    purpose_stats = {label: {"days": [], "win": 0, "total": 0} for label in purpose_labels}
-
-    for row in matrix_results:
-        profit = row[0]
-        days_held = row[3]
-        purpose_idx = row[9]
-        try:
-            purpose_label = purpose_labels[int(purpose_idx)]
-        except (ValueError, IndexError, TypeError):
-            continue  # 不正なデータはスキップ
-
-        # 日数（int型のみ集計）
-        if isinstance(days_held, int):
-            purpose_stats[purpose_label]["days"].append(days_held)
-        # 勝率カウント
-        if profit is not None:
-            purpose_stats[purpose_label]["total"] += 1
-            if profit > 0:
-                purpose_stats[purpose_label]["win"] += 1
-
-    # グラフ用リスト（棒グラフ＋折れ線グラフ用）
-    purpose_graph_data = []
-    for label in purpose_labels:
-        stats = purpose_stats[label]
-        avg_days = round(sum(stats["days"]) / len(stats["days"]), 1) if stats["days"] else 0
-        win_rate = round(stats["win"] / stats["total"] * 100, 1) if stats["total"] > 0 else 0
-        purpose_graph_data.append({
-            "purpose": label,
-            "avg_days": avg_days,
-            "win_rate": win_rate
-        })
-
-
-
 
 
 
@@ -302,7 +259,6 @@ def matrix():
         heatmap=heatmap,  # ← 追加！
         entry_feelings=entry_feelings,  # ← 追加
         exit_feelings=exit_feelings,    # ← 追加
-        purpose_graph_data=purpose_graph_data,  # ←ここを追加！
     )
 
 

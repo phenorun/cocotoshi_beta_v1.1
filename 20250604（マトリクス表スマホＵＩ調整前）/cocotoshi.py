@@ -5,34 +5,9 @@ import csv
 
 
 
-
 app = Flask(__name__)
 DATABASE = 'cocotoshi.db'
 
-
-entry_feelings = ["恐怖", "不安", "普通", "強気", "焦り"]
-exit_feelings = ["焦り", "不安", "普通", "安堵", "興奮"]
-
-# 投資目的コード→ラベル
-purposes = {
-    0: "短期",
-    1: "中期",
-    2: "長期",
-    3: "優待",
-    4: "配当"
-}
-
-
-
-def clamp_feeling(val):
-    """
-    feeling値を必ず0～4の範囲にする。Noneや空でも0返す。
-    """
-    try:
-        v = int(val)
-        return max(0, min(v, 4))
-    except Exception:
-        return 0
 
 
 # ---ここからCSV自動補完用の辞書生成コード---
@@ -50,15 +25,6 @@ def load_code2company(csv_path):
 code2company = load_code2company('code2company.csv')
 # ---ここまで---
 
-
-
-@app.context_processor
-def inject_feelings():
-    return dict(
-        entry_feelings=entry_feelings,
-        exit_feelings=exit_feelings,
-        purposes=purposes,        # ←これ追加！
-    )
 
 
 
@@ -145,9 +111,6 @@ from math import ceil
 def matrix():
     from math import ceil
     from datetime import datetime
-    import numpy as np
-    # cocotoshi.py の matrix() 関数内の "matrix_results" 算出後、return直前に追記
-    from collections import defaultdict
     # 1. トレードデータ取得
     with sqlite3.connect(DATABASE) as conn:
         c = conn.cursor()
@@ -178,23 +141,16 @@ def matrix():
                     except Exception:
                         days_held = "-"
                     # ここでexit_dateもtupleに入れる（index 7）
-                    parent_purpose = parent.get("purpose", 0)
-                    try:
-                        parent_purpose = int(parent_purpose)
-                    except Exception:
-                        parent_purpose = 0
-
                     matrix_results.append((
-                        profit,
-                        clamp_feeling(parent["feeling"]),
-                        clamp_feeling(child["feeling"]),
-                        days_held,
-                        parent.get("memo", ""),
-                        child.get("memo", ""),
-                        child.get("id"),
-                        exit_date,
-                        parent.get("stock", ""),
-                        parent_purpose
+                        profit,                        # 0 利益
+                        parent["feeling"],             # 1
+                        child["feeling"],              # 2
+                        days_held,                     # 3
+                        parent.get("memo", ""),        # 4
+                        child.get("memo", ""),         # 5
+                        child.get("id"),               # 6
+                        exit_date,                     # 7 取引日付（決済日）
+                        parent.get("stock", "")        # 8
                     ))
 
     # 4. 並び順の切り替え
@@ -207,80 +163,6 @@ def matrix():
         matrix_results.sort(key=lambda x: x[0] or 0)
     else:
         matrix_results.sort(key=lambda x: x[7], reverse=True)  # デフォ：日付降順（新しい順）
-    
-
-        # ★ この辞書をmatrix関数内のどこかで宣言！
-    purposes = {
-        1: "短期",
-        2: "中期",
-        3: "長期",
-        4: "優待",
-        5: "配当",
-        # 必要に応じて追加
-    }
-
-
-
-    # 投資目的ラベル
-    purpose_labels = ["短期", "中期", "長期", "優待", "配当"]
-
-
-    heatmap_trades = []
-    for item in trade_tree:
-        parent = item["parent"]
-        for child in item["children"]:
-            is_opposite_trade = (
-                (parent["type"] == "buy" and child["type"] == "sell") or
-                (parent["type"] == "sell" and child["type"] == "buy")
-            )
-            if is_opposite_trade and "profits" in child and child["profits"]:
-                for profit in child["profits"]:
-                    heatmap_trades.append(
-                        (parent["feeling"], child["feeling"], profit)
-                    )
-
-    # ヒートマップデータ作成
-    heatmap = calc_heatmap(heatmap_trades)
-
-
-    # 集計用辞書
-    purpose_stats = {label: {"days": [], "win": 0, "total": 0} for label in purpose_labels}
-
-    for row in matrix_results:
-        profit = row[0]
-        days_held = row[3]
-        purpose_idx = row[9]
-        try:
-            purpose_label = purpose_labels[int(purpose_idx)]
-        except (ValueError, IndexError, TypeError):
-            continue  # 不正なデータはスキップ
-
-        # 日数（int型のみ集計）
-        if isinstance(days_held, int):
-            purpose_stats[purpose_label]["days"].append(days_held)
-        # 勝率カウント
-        if profit is not None:
-            purpose_stats[purpose_label]["total"] += 1
-            if profit > 0:
-                purpose_stats[purpose_label]["win"] += 1
-
-    # グラフ用リスト（棒グラフ＋折れ線グラフ用）
-    purpose_graph_data = []
-    for label in purpose_labels:
-        stats = purpose_stats[label]
-        avg_days = round(sum(stats["days"]) / len(stats["days"]), 1) if stats["days"] else 0
-        win_rate = round(stats["win"] / stats["total"] * 100, 1) if stats["total"] > 0 else 0
-        purpose_graph_data.append({
-            "purpose": label,
-            "avg_days": avg_days,
-            "win_rate": win_rate
-        })
-
-
-
-
-
-
 
     # ページネーション
     page = int(request.args.get('page', 1))
@@ -297,13 +179,9 @@ def matrix():
         page=page,
         total_pages=total_pages,
         current="matrix",
-        sort=sort,
-        purposes=purposes,
-        heatmap=heatmap,  # ← 追加！
-        entry_feelings=entry_feelings,  # ← 追加
-        exit_feelings=exit_feelings,    # ← 追加
-        purpose_graph_data=purpose_graph_data,  # ←ここを追加！
+        sort=sort
     )
+
 
 
 
@@ -317,84 +195,43 @@ def summary():
         c = conn.cursor()
         c.execute("""
             SELECT
-                code,
-                stock,
-                purpose,
-                SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
-                    - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) AS holding,
-                ROUND(
-                CASE
-                    WHEN SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
-                        - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) > 0 THEN
-                    SUM(CASE WHEN type='buy' THEN price * quantity ELSE 0 END)
-                    / NULLIF(SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END), 0)
-                    WHEN SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
-                        - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) < 0 THEN
-                    SUM(CASE WHEN type='sell' THEN price * quantity ELSE 0 END)
-                    / NULLIF(SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END), 0)
-                    ELSE 0
-                END
-                ) AS avg_price,
-                CASE
-                WHEN SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
-                    - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) > 0 THEN
-                    MAX(CASE WHEN type='buy' THEN date END)
-                WHEN SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
-                    - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) < 0 THEN
-                    MAX(CASE WHEN type='sell' THEN date END)
-                ELSE NULL
-                END AS last_trade_date,
-                -- 👇ここがポイント！（カンマに注意）
-                MAX(CASE WHEN type='buy' THEN feeling END) AS feeling
-            FROM trades
-            WHERE code IS NOT NULL
-            GROUP BY code, stock, purpose
-            HAVING holding != 0
-            ORDER BY last_trade_date DESC
+    code,
+    stock,
+    purpose,
+    SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
+    - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) AS holding,
+
+    ROUND(
+      CASE
+        WHEN SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
+             - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) > 0 THEN
+          SUM(CASE WHEN type='buy' THEN price * quantity ELSE 0 END)
+          / NULLIF(SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END), 0)
+        WHEN SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
+             - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) < 0 THEN
+          SUM(CASE WHEN type='sell' THEN price * quantity ELSE 0 END)
+          / NULLIF(SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END), 0)
+        ELSE 0
+      END
+    ) AS avg_price,
+
+    CASE
+      WHEN SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
+           - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) > 0 THEN
+        MAX(CASE WHEN type='buy' THEN date END)
+      WHEN SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END)
+           - SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END) < 0 THEN
+        MAX(CASE WHEN type='sell' THEN date END)
+      ELSE NULL
+    END AS last_trade_date
+
+FROM trades
+WHERE code IS NOT NULL
+GROUP BY code, stock, purpose
+HAVING holding != 0
+ORDER BY last_trade_date DESC
         """)
         summary_data = c.fetchall()
-
-
-    # ★ここから保有日数を計算して付与する★
-    today = datetime.today().date()
-    summary_data_with_days = []
-    for row in summary_data:
-        # row: [code, stock, purpose, holding, avg_price, last_trade_date]
-        print("row=", row)
-
-        last_date = row[5]
-        feeling = row[6]  # ここで感情値を取得
-        if last_date:
-            try:
-                last_date_dt = datetime.strptime(last_date, "%Y-%m-%d").date()
-                hold_days = (today - last_date_dt).days
-            except Exception:
-                hold_days = "-"
-        else:
-            hold_days = "-"
-        print("hold_days=", hold_days)
-        # rowにhold_daysを追加して新リスト化
-        summary_data_with_days.append(list(row) + [hold_days])
-
-        purpose_map = {
-            "0": "短期", "1": "中期", "2": "長期", "3": "優待", "4": "配当",
-            0: "短期", 1: "中期", 2: "長期", 3: "優待", 4: "配当"
-        }
-
-        summary_data_with_days = []
-        for row in summary_data:
-            # ...保有日数処理...
-            raw_purpose = row[2]
-            purpose = purpose_map.get(str(raw_purpose), raw_purpose)
-            # row[2] = 目的名に置き換え
-            new_row = list(row)
-            new_row[2] = purpose
-            summary_data_with_days.append(new_row)
-
-
-
-
-
 
     # ページネーション
     page = int(request.args.get('page', 1))
@@ -407,15 +244,11 @@ def summary():
 
     return render_template(
         "summary.html",
+        summary_data=summary_data_page,
         page=page,
         total_pages=total_pages,
-        current="summary",
-        summary_data=summary_data_with_days,  # ←ココ！
-        entry_feelings=entry_feelings,
+        current="summary"
     )
-
-
-
 
 
 
@@ -461,17 +294,17 @@ def form():
         total = price * quantity
         date = request.form['date']
         feeling_raw = request.form.get("feeling", "")
-        feeling = clamp_feeling(feeling_raw)  # これで絶対0～4になる
-
+        try:
+            feeling = int(feeling_raw) if feeling_raw else None   # 未入力ならNone
+        except ValueError:
+            feeling = None
         memo = request.form['memo']
         parent_id = request.form.get("parent_id")
         code = request.form.get("code")
         parent_id = int(parent_id) if parent_id else None
-        purpose_raw = request.form.get("purpose", "").strip()
-        try:
-            purpose = int(purpose_raw)
-        except (ValueError, TypeError):
-            purpose = 0  # 未設定や不正な値は 0 にしておく
+        purpose = request.form.get("purpose", "-")
+        if not purpose:
+            purpose = "-"
 
 
                 # 子カードの場合、親カードの値を自動補完
@@ -483,27 +316,28 @@ def form():
                 if parent_row:
                     if not code or code.strip() == "":
                         code = parent_row[0]
-                    if not purpose:
+                    if not purpose or purpose.strip() == "":
                         purpose = parent_row[1]
                     if not stock or stock.strip() == "":
                         stock = parent_row[2]
 
 
+
         # ＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
-        # ★「新規売り」と「編集時の売り」それぞれ残株数バリデーション
+        # ★ ここで「保有株数以上の売り」エラーチェック（子カード追加時のみ）を追加！★
         if type == 'sell' and parent_id:
-            # 残株数を計算
             with sqlite3.connect(DATABASE) as conn:
                 c = conn.cursor()
+                # 親カードのタイプ取得
                 c.execute("SELECT type FROM trades WHERE id=?", (parent_id,))
                 parent_row = c.fetchone()
                 parent_type = parent_row[0] if parent_row else "buy"
 
                 if parent_type == "buy":
                     c.execute("""
-                        SELECT 
-                            COALESCE(SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END), 0) -
-                            COALESCE(SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END), 0)
+                         SELECT 
+                             COALESCE(SUM(CASE WHEN type='buy' THEN quantity ELSE 0 END), 0) -
+                             COALESCE(SUM(CASE WHEN type='sell' THEN quantity ELSE 0 END), 0)
                         FROM trades
                         WHERE parent_id=? OR id=?
                     """, (parent_id, parent_id))
@@ -520,60 +354,27 @@ def form():
                 else:
                     remaining = 0
 
-            # --- 編集時は自分自身の旧数量を加算して増分だけ判定 ---
-            if edit_id:
-                with sqlite3.connect(DATABASE) as conn:
-                    c = conn.cursor()
-                    c.execute("SELECT quantity FROM trades WHERE id=?", (edit_id,))
-                    old_qty_row = c.fetchone()
-                    old_qty = old_qty_row[0] if old_qty_row else 0
-
-                # 編集後の数量増分だけで判定（減らすだけならバリデーション不要）
-                increase = quantity - old_qty
-                if increase > 0 and increase > remaining:
-                    error_msg = f"親カードの残株数（{remaining}株）以上の売り増加はできません！"
-                    trade_tree = build_trade_tree(get_trades())
-                    return render_template(
-                        "history.html",
-                        trade_tree=trade_tree,
-                        error_msg=error_msg,
-                        edit_id=edit_id,
-                        edit_type=type,
-                        edit_stock=stock,
-                        edit_code=code,
-                        edit_price=int(price) if price is not None else "",
-                        edit_quantity=quantity,
-                        edit_total=int(total) if total is not None else "",
-                        edit_date=date,
-                        edit_feeling=feeling_raw,
-                        edit_purpose=purpose,
-                        edit_memo=memo,
-                    )
-            else:
-                # 新規登録時はそのまま
-                if quantity > remaining:
-                    error_msg = f"親カードの残株数（{remaining}株）以上の売りはできません！"
-                    trade_tree = build_trade_tree(get_trades())
-                    return render_template(
-                        "history.html",
-                        trade_tree=trade_tree,
-                        error_msg=error_msg,
-                        edit_id=edit_id,
-                        edit_type=type,
-                        edit_stock=stock,
-                        edit_code=code,
-                        edit_price=int(price) if price is not None else "",
-                        edit_quantity=quantity,
-                        edit_total=int(total) if total is not None else "",
-                        edit_date=date,
-                        edit_feeling=feeling_raw,
-                        edit_purpose=purpose,
-                        edit_memo=memo,
-                    )
+            if quantity > remaining:
+                error_msg = f"親カードの残株数（{remaining}株）以上の売りはできません！"
+                # 入力値を全部テンプレに渡す！
+                trade_tree = build_trade_tree(get_trades())
+                return render_template(
+                    "history.html",
+                    trade_tree=trade_tree,
+                    error_msg=error_msg,
+                    edit_id=edit_id,
+                    edit_type=type,
+                    edit_stock=stock,
+                    edit_code=code,
+                    edit_price=int(price) if price is not None else "",
+                    edit_quantity=quantity,
+                    edit_total=int(total) if total is not None else "",
+                    edit_date=date,
+                    edit_feeling=feeling_raw,
+                    edit_purpose=purpose,
+                    edit_memo=memo,
+                )
         # ＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
-
-
-
 
         with sqlite3.connect(DATABASE) as conn:
             c = conn.cursor()
@@ -627,7 +428,7 @@ def delete(id):
                 # 子カードなら自分だけ消す
                 c.execute('DELETE FROM trades WHERE id=?', (id,))
             conn.commit()
-    return redirect('/history')
+    return redirect('/')
 
 
 @app.route("/history")
@@ -680,6 +481,9 @@ def debug():
     html += "</table>"
 
     return html
+
+
+
 
 
 
@@ -829,22 +633,6 @@ def calc_moving_average_profit(trades):
         else:
             t["profit"] = None
     return trades
-
-
-
-def calc_heatmap(trades):
-    import numpy as np
-    N = 5  # 感情種類数（感情ラベルが1〜5の場合）
-    profit_mat = np.zeros((N, N))
-    count_mat = np.zeros((N, N))
-    for entry, exit_, profit in trades:
-        if entry and exit_:
-            i = int(entry) - 1
-            j = int(exit_) - 1
-            profit_mat[i][j] += profit
-            count_mat[i][j] += 1
-    avg_profit = np.where(count_mat > 0, profit_mat / count_mat, 0)
-    return avg_profit.astype(int).tolist()
 
 
 
