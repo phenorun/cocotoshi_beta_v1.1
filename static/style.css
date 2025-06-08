@@ -810,6 +810,10 @@ body, .matrix-page {
   box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.1);
   border-top: 1px solid #ddd;
   padding-bottom: env(safe-area-inset-bottom, 0);
+    /* 他の設定＋下記を追加 */
+  padding-bottom: env(safe-area-inset-bottom, 24px); /* ← 24pxは最低値、必要に応じて調整 */
+  /* iOS旧対応： */
+  padding-bottom: constant(safe-area-inset-bottom, 24px);
 }
 
 
