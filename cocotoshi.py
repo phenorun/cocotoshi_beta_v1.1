@@ -239,8 +239,14 @@ def matrix():
                         (parent["feeling"], child["feeling"], profit)
                     )
 
+    print("=== heatmap_trades ===")
+    for entry, exit_, profit in heatmap_trades:
+        print(f"entry: {entry}, exit: {exit_}, profit: {profit}")
+    print("=== end ===")
+
     # ヒートマップデータ作成
-    heatmap = calc_heatmap(heatmap_trades)
+    heatmap, heatmap_counts = calc_heatmap(heatmap_trades)
+
 
 
     # 集計用辞書
@@ -300,6 +306,7 @@ def matrix():
         sort=sort,
         purposes=purposes,
         heatmap=heatmap,  # ← 追加！
+        heatmap_counts=heatmap_counts,  # ←これ追加！
         entry_feelings=entry_feelings,  # ← 追加
         exit_feelings=exit_feelings,    # ← 追加
         purpose_graph_data=purpose_graph_data,  # ←ここを追加！
@@ -834,17 +841,18 @@ def calc_moving_average_profit(trades):
 
 def calc_heatmap(trades):
     import numpy as np
-    N = 5  # 感情種類数（感情ラベルが1〜5の場合）
+    N = 5  # 感情種類数
     profit_mat = np.zeros((N, N))
     count_mat = np.zeros((N, N))
     for entry, exit_, profit in trades:
-        if entry and exit_:
-            i = int(entry) - 1
-            j = int(exit_) - 1
+        if entry is not None and exit_ is not None:
+            i = int(entry)
+            j = int(exit_)
             profit_mat[i][j] += profit
             count_mat[i][j] += 1
     avg_profit = np.where(count_mat > 0, profit_mat / count_mat, 0)
-    return avg_profit.astype(int).tolist()
+    return avg_profit.astype(int).tolist(), count_mat.astype(int).tolist()
+
 
 
 

@@ -54,6 +54,9 @@
                 {% else %}neutral{% endif %}
               ">
                 {{ heatmap[i][j] }}
+                {% if heatmap_counts[i][j] > 0 %}
+                  <span class="badge">{{ heatmap_counts[i][j] }}件</span>
+                {% endif %}
               </td>
             {% endfor %}
           </tr>
@@ -205,20 +208,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 <span class="purpose-label" style="display: inline-flex; align-items: center; gap: 4px;">
-  {% set pid = row[9]|int %}
-  {% if pid == 1 %}
-    <span class="purpose-icon">💹</span>短期
-  {% elif pid == 2 %}
-    <span class="purpose-icon">📊</span>中期
-  {% elif pid == 3 %}
-    <span class="purpose-icon">📈</span>長期
-  {% elif pid == 4 %}
-    <span class="purpose-icon">🎁</span>優待
-  {% elif pid == 5 %}
-    <span class="purpose-icon">💰</span>配当
-  {% else %}
-    ―
-  {% endif %}
+{% set pid = row[9]|int %}
+{% if pid == 0 %}
+  <span class="purpose-icon">💹</span>短期
+{% elif pid == 1 %}
+  <span class="purpose-icon">📊</span>中期
+{% elif pid == 2 %}
+  <span class="purpose-icon">📈</span>長期
+{% elif pid == 3 %}
+  <span class="purpose-icon">🎁</span>優待
+{% elif pid == 4 %}
+  <span class="purpose-icon">💰</span>配当
+{% else %}
+  ―
+{% endif %}
 </span>
 
   <span class="memo-toggle" onclick="toggleMemo(this, event)">メモ▼</span>

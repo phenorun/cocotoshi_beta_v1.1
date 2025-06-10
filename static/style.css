@@ -1508,6 +1508,75 @@ body.matrix-overflow-fix,
   padding-bottom: calc(60px + env(safe-area-inset-bottom, 18px));
 }
 
+/* style.css のどこかに追記 */
+#edit-modal, #modal, #delete-confirm-modal, #watch-delete-modal {
+  display: none;
+}
+#edit-modal.show,
+#modal.show,
+#delete-confirm-modal.show,
+#watch-delete-modal.show {
+  display: block !important;
+}
+
+.badge {
+  display: inline-block;
+  background: #e8eaf1;
+  color: #235;
+  font-size: 0.8em;
+  border-radius: 1em;
+  padding: 0 0.5em;
+  margin-left: 0.3em;
+  vertical-align: middle;
+  box-shadow: 0 1px 2px #f0f2ff;
+}
+
+@media (max-width: 600px) {
+  /* タブ周りやh2の余白を減らす */
+  .matrix-page h2 {
+    margin-top: 0.6em;
+    margin-bottom: 0.3em;
+    font-size: 1.1em;
+  }
+  .matrix-tabs {
+    margin-bottom: 0.2em;
+    margin-top: 0.1em;
+  }
+  .matrix-page {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+  body, .main-content {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+  .tab-content {
+    padding-top: 0.2em;
+    min-height: 0 !important;
+  }
+}
+
+
+@media (max-width: 600px) {
+  .matrix-page,
+  .main-content,
+  body {
+    min-height: 0 !important;
+    height: auto !important;
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+}
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -355,32 +355,50 @@
       <label>日付：<input type="date" name="date" id="edit-date" value="{{ edit_date or '' }}"></label><br>
 
       <!-- 感情：セレクト式に変更 -->
-      <label>感情：
-        <select name="feeling" id="edit-feeling">
-          <option value="1" {% if edit_feeling == '1' %}selected{% endif %}>😖 ネガティブ</option>
-          <option value="2" {% if edit_feeling == '2' %}selected{% endif %}>😞 やや不安</option>
-          <option value="3" {% if edit_feeling == '3' %}selected{% endif %}>😐 ふつう</option>
-          <option value="4" {% if edit_feeling == '4' %}selected{% endif %}>🙂 まあまあ</option>
-          <option value="5" {% if edit_feeling == '5' %}selected{% endif %}>😄 ハッピー</option>
-        </select>
-      </label><br>
+      <label>感情：</label>
+      <div class="feeling-options">
+        <label>
+          <input type="radio" class="feeling-radio" name="feeling" value="1" id="edit-feeling-1">
+          <span class="feeling-label feeling-1">恐怖</span>
+        </label>
+        <label>
+          <input type="radio" class="feeling-radio" name="feeling" value="2" id="edit-feeling-2">
+          <span class="feeling-label feeling-2">不安</span>
+        </label>
+        <label>
+          <input type="radio" class="feeling-radio" name="feeling" value="3" id="edit-feeling-3">
+          <span class="feeling-label feeling-3">普通</span>
+        </label>
+        <label>
+          <input type="radio" class="feeling-radio" name="feeling" value="4" id="edit-feeling-4">
+          <span class="feeling-label feeling-4">強気</span>
+        </label>
+        <label>
+          <input type="radio" class="feeling-radio" name="feeling" value="5" id="edit-feeling-5">
+          <span class="feeling-label feeling-5">焦り</span>
+        </label>
+      </div>
+      
+      <br>
 
 
 
 
 
-        <div id="edit-purpose-wrap">
+      <div id="edit-purpose-wrap">
         <label>目的：
         <select name="purpose" id="edit-purpose">
-      <option value="short" {% if edit_purpose == 'short' %}selected{% endif %}>💹 短期</option>
-      <option value="middle" {% if edit_purpose == 'middle' %}selected{% endif %}>📊 中期</option>
-      <option value="long" {% if edit_purpose == 'long' %}selected{% endif %}>📈 長期</option>
-      <option value="benefit" {% if edit_purpose == 'benefit' %}selected{% endif %}>🎁 優待</option>
-      <option value="dividend" {% if edit_purpose == 'dividend' %}selected{% endif %}>💰 配当</option>
-      <option value="" {% if not edit_purpose %}selected{% endif %}>--未設定--</option>
-    </select>
-  </label><br>
-</div>
+          <option value="0" ...>💹 短期</option>
+          <option value="1" ...>📊 中期</option>
+          <option value="2" ...>📈 長期</option>
+          <option value="3" ...>🎁 優待</option>
+          <option value="4" ...>💰 配当</option>
+          <option value="" ...>--未設定--</option>
+        </select>
+        </label>
+      </div>
+  
+  <br>
 
       <label>メモ：<textarea name="memo" id="edit-memo">{{ edit_memo or '' }}</textarea></label><br>
       <button type="submit">保存</button>
@@ -435,7 +453,12 @@ document.querySelectorAll('.edit-link').forEach(function(btn) {
     document.getElementById('edit-quantity').value = btn.dataset.quantity || '';
     document.getElementById('edit-total').value = btn.dataset.total || '';
     document.getElementById('edit-date').value = btn.dataset.date || '';
-    document.getElementById('edit-feeling').value = btn.dataset.feeling || '';
+        // --- 感情ラジオボタンをセットする正しい方法
+    let fval = btn.dataset.feeling || '';
+    if (fval) {
+      let radio = document.querySelector('#edit-modal input[name="feeling"][value="' + fval + '"]');
+      if (radio) radio.checked = true;
+    }
     document.getElementById('edit-parent-id').value = btn.dataset.parentId || '';
     // ★修正：目的だけ変換後をセット！
     document.getElementById('edit-purpose').value = purposeValue;

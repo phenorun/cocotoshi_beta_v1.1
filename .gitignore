@@ -2,3 +2,9 @@
 *.xls
 *.db
 .env
+*.csv
+*.exe
+.venv/
+venv/
+__pycache__/
+*.pyc
