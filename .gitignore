@@ -1,9 +1,4 @@
 # DBファイルと秘密情報は除外
 *.xls
+*.db
 .env
-*.csv
-*.exe
-.venv/
-venv/
-__pycache__/
-*.pyc
