@@ -2050,18 +2050,22 @@ select {
 }
 
 @media (max-width: 600px) {
-  body, .container {
-    padding-top: 32px;  /* Androidのステータスバー分 */
+  html, body {
+    /* ステータスバー分の余白を強制付与（全ページに効く） */
+    padding-top: env(safe-area-inset-top, 32px) !important;
+    /* iOS等のノッチ対応で自動取得。なければ32pxを使う */
+    box-sizing: border-box;
+  }
+  .main-content,
+  .container,
+  .matrix-page,
+  .page-title,
+  header {
+    /* もし各ページでまだかぶるなら、主要な上部コンテナにも余白を追加 */
+    margin-top: 0 !important;
+    padding-top: 0 !important;
   }
 }
-
-@media (max-width: 600px) {
-  .page-title {
-    margin-top: 32px;
-  }
-}
-
-
 
 
 
