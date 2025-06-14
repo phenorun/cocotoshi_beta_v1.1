@@ -2068,7 +2068,9 @@ select {
 }
 
 
-
+html, body {
+    background-color: #fff !important;
+}
 
 
 
