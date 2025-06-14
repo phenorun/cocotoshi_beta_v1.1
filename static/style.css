@@ -2049,7 +2049,17 @@ select {
   }
 }
 
+@media (max-width: 600px) {
+  body, .container {
+    padding-top: 32px;  /* Androidのステータスバー分 */
+  }
+}
 
+@media (max-width: 600px) {
+  .page-title {
+    margin-top: 32px;
+  }
+}
 
 
 
